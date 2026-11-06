@@ -1,2 +1,6 @@
-import {Platform} from "@/components/pfsa-platform"; export default function Page(){return <Platform page="student"/>}
+import { StudentWorkspace } from "@/components/student-workspace";
+
+export default function Page() {
+  return <StudentWorkspace />;
+}
 
