@@ -142,4 +142,15 @@ body {
 .font-serif { font-family: Georgia, "Times New Roman", serif; }
 .field { margin-top: .75rem; width: 100%; border-radius: .5rem; border: 1px solid #e2e8f0; background: transparent; padding: .7rem .8rem; outline: none; }
 .dark .field { border-color: rgb(255 255 255 / .15); }
+.file-picker { display: flex; align-items: center; gap: .75rem; width: 100%; min-height: 3.2rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: #fff; padding: .45rem; color: #334155; cursor: pointer; }
+.file-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.file-picker span { display: inline-flex; align-items: center; border-radius: .42rem; background: #101f3a; padding: .6rem .85rem; color: #fff; font-size: .875rem; font-weight: 700; }
+.file-picker b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; }
+.dark .submission-box { background: #251f13; border-color: #76551f; }
+.dark .submission-text { background: #0f1c32; color: #fff; border-color: #526174; }
+.dark .submission-text::placeholder { color: #b8c4d4; opacity: 1; }
+.dark .file-picker { background: #0f1c32; border-color: #526174; color: #f8fafc; }
+.dark .file-picker span { background: #c5a059; color: #101f3a; }
+.dark .submission-button { background: #c5a059; color: #101f3a; }
+.dark .submission-button:disabled { background: #64748b; color: #fff; border: 1px solid #94a3b8; }
 
