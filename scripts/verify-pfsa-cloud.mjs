@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {createClient} from '@supabase/supabase-js';
+const url='https://ndtlhzrkonordpntyphe.supabase.co',key='sb_publishable_tGuLrcx7jPvArHSfwfmOUw_Gz0yCGpl';
+const student=createClient(url,key,{auth:{persistSession:false}}),staff=createClient(url,key,{auth:{persistSession:false}}),guest=createClient(url,key,{auth:{persistSession:false}});
+const studentId='3ae21f4c-545a-40ad-82d0-84c7dbfab101',staffId='3ae21f4c-545a-40ad-82d0-84c7dbfab102';
+const check=r=>{if(r.error)throw r.error;return r.data;};
+for(const [client,name] of [[student,'student'],[staff,'staff']])check(await client.auth.signInWithPassword({email:`pfsa-cloud-qa-${name}@example.invalid`,password:'PFSA-QA-8Jv32tH5!Z'}));
+check(await student.from('pfsa_profiles').insert({id:studentId,name:'Temporary QA Student',email:'pfsa-cloud-qa-student@example.invalid'}));
+const app=check(await student.from('pfsa_records').insert({kind:'application',user_id:studentId,data:{programme:'mobile',status:'pending'}}).select().single());
+assert((await student.from('pfsa_records').insert({kind:'application',user_id:studentId,data:{programme:'cloud',status:'pending'}})).error,'Second application must fail');
+check(await staff.from('pfsa_records').update({data:{...app.data,status:'approved'}}).eq('id',app.id));
+const path=`${studentId}/qa/test.pdf`;
+check(await student.storage.from('pfsa-files').upload(path,new Blob(['%PDF-1.4 PFSA temporary QA'],{type:'application/pdf'})));
+assert((await guest.storage.from('pfsa-files').download(path)).error,'Anonymous download must be rejected');
+assert(check(await staff.storage.from('pfsa-files').createSignedUrl(path,60)).signedUrl,'Staff signed URL');
+for(let week=1;week<=4;week++){
+ check(await staff.from('pfsa_records').insert({kind:'task',user_id:staffId,data:{programme:'mobile',week,title:'Temporary QA task',due:`2026-12-${20+week}`,path}}));
+ const sub=check(await student.from('pfsa_records').insert({kind:'submission',user_id:studentId,data:{programme:'mobile',week,description:Array(201).fill('evidence').join(' '),status:'submitted',path}}).select().single());
+ const denied=await student.from('pfsa_records').update({data:{...sub.data,marks:100,status:'reviewed'}}).eq('id',sub.id).select();
+ assert.equal(denied.data?.length||0,0,'Student cannot self-grade');
+ check(await staff.from('pfsa_records').update({data:{...sub.data,marks:85,status:'reviewed',feedback:'QA complete'}}).eq('id',sub.id));
+}
+const payment=check(await student.from('pfsa_records').insert({kind:'payment',user_id:studentId,data:{package:'150',utr:'QA-NOT-A-REAL-PAYMENT',status:'pending'}}).select().single());
+check(await staff.from('pfsa_records').update({data:{...payment.data,status:'approved'}}).eq('id',payment.id));
+const doc=check(await staff.from('pfsa_records').insert({kind:'document',user_id:studentId,data:{programme:'mobile',number:'PFSA-QA-REMOVE',candidate:'Temporary QA Student',type:'Letter of Experience',status:'published',path}}).select().single());
+assert.equal(check(await guest.rpc('pfsa_verify',{document_number:'PFSA-QA-REMOVE'})).length,1,'Public document lookup');
+check(await staff.from('pfsa_records').update({data:{...doc.data,status:'revoked'}}).eq('id',doc.id));
+assert.equal(check(await guest.rpc('pfsa_verify',{document_number:'PFSA-QA-REMOVE'})).length,0,'Revocation removes verification');
+check(await staff.storage.from('pfsa-files').remove([path]));
+check(await staff.from('pfsa_records').delete().eq('user_id',staffId));
+await student.auth.signOut();await staff.auth.signOut();
+console.log('PASS: email/password, one internship, private uploads, staff signed downloads, four submissions, grading restrictions, payments, publication and revocation.');

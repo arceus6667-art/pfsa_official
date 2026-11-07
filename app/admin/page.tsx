@@ -1,4 +1,2 @@
-import { AdminWorkspace } from "@/components/admin-workspace";
-
-export default function Page() { return <AdminWorkspace />; }
-
+import { AcademyCloud } from "@/components/academy-cloud";
+export default function Page() { return <AcademyCloud page="admin" />; }

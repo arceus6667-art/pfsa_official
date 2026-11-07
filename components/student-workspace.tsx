@@ -76,6 +76,13 @@ export function StudentWorkspace() {
     : 0;
   const overall = Math.min(100, submissions.length * 25);
   const completionUnlocked = submissions.length >= 4;
+  const scheduledTasks = application && (user?.startDate || store?.batchDate)
+    ? tasks.map((task) => {
+        const due = new Date(`${user?.startDate || store?.batchDate}T12:00:00`);
+        due.setDate(due.getDate() + task.week * 7 - 1);
+        return { ...task, due };
+      })
+    : [];
   const weekStart = new Date(calendarDate);
   weekStart.setDate(calendarDate.getDate() - calendarDate.getDay());
   const calendarDays = Array.from({ length: 7 }, (_, index) => {
@@ -145,7 +152,9 @@ export function StudentWorkspace() {
               <button onClick={() => setTab("Tasks")}>View all →</button>
             </div>
             <p>
-              • Week 1 Assignment: {tasks[0].title} <b>12 Nov</b>
+              {scheduledTasks.find((task) => task.due >= new Date())
+                ? `Next assignment: ${scheduledTasks.find((task) => task.due >= new Date())?.title}`
+                : "No upcoming assignments scheduled."}
             </p>
           </article>
         </div>
@@ -235,10 +244,10 @@ export function StudentWorkspace() {
               </b>
               <strong>{date.getDate()}</strong>
             </div>
-            {tasks
-              .filter((task) => index === 4 && task.week === 1)
+            {scheduledTasks
+              .filter((task) => task.due.toDateString() === date.toDateString())
               .map((task) => (
-                <p key={task.week}>✓ Week 1 Assignment: {task.title}</p>
+                <p key={task.week}>Week {task.week} Assignment: {task.title}</p>
               ))}
           </article>
         ))}
@@ -603,4 +612,3 @@ function Profile({
     </section>
   );
 }
-

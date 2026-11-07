@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { repo, type AppStore, type User } from "@/lib/pfsa-store";
+import "./admin-workspace.css";
 
 function useStore() {
   const [store, setStore] = useState<AppStore | null>(null);
@@ -166,8 +167,7 @@ function Candidates({
     <section className="admin-card">
       <h2>Candidate records</h2>
       <p>
-        Staff edits are saved to the prototype store and appear immediately in
-        the student profile.
+        Manage candidate contact details and professional profiles.
       </p>
       <div className="candidate-table">
         <div className="candidate-head">
@@ -347,4 +347,3 @@ function Documents({
     </section>
   );
 }
-

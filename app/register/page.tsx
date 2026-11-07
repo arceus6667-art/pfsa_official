@@ -1,2 +1,2 @@
-import {Platform} from "@/components/pfsa-platform"; export default function Page(){return <Platform page="register"/>}
-
+import { AcademyCloud } from "@/components/academy-cloud";
+export default function Page() { return <AcademyCloud page="register" />; }

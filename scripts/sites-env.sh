@@ -51,4 +51,3 @@ fi
 
 cd "${project_root}"
 exec "$@"
-

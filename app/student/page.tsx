@@ -1,6 +1,2 @@
-import { StudentWorkspace } from "@/components/student-workspace";
-
-export default function Page() {
-  return <StudentWorkspace />;
-}
-
+import { AcademyCloud } from "@/components/academy-cloud";
+export default function Page() { return <AcademyCloud page="student" />; }

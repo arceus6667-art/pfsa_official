@@ -4,4 +4,3 @@ declare namespace Cloudflare {
     BUCKET?: R2Bucket;
   }
 }
-

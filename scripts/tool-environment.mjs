@@ -17,4 +17,3 @@ export function configureToolEnvironment(projectRoot) {
     process.env[name] ??= value;
   }
 }
-
