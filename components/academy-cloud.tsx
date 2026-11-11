@@ -13,6 +13,8 @@ import {
 import { programmes, packages } from "@/lib/pfsa-data";
 import "./academy-cloud.css";
 import { DomainGuides } from "./domain-guides";
+import {AdminReports} from "./admin-reports";
+import {readAllRows} from "@/lib/admin-pagination";
 import {CertificationCards} from "./certification-cards";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
@@ -29,6 +31,9 @@ const studentTabs = [
 ];
 const adminTabs = [
   "Overview",
+  "Students & records",
+  "Batches",
+  "Weekly tracking",
   "Candidates",
   "Applications",
   "Tasks",
@@ -105,16 +110,17 @@ export function AcademyCloud({
       return;
     }
     if(page==="student" && current.app_metadata.pfsa_role!=="admin") await completePendingApplication(current.id);
-    const [p, r] = await Promise.all([
-      cloud.from("pfsa_profiles").select("*").order("name"),
-      cloud
-        .from("pfsa_records")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
-    if (p.error || r.error) throw p.error || r.error;
-    setProfiles(p.data || []);
-    setRecords(r.data || []);
+    if(current.app_metadata.pfsa_role==='admin') {
+      const [p,r]=await Promise.all([
+        readAllRows<Profile>((from,to)=>cloud.rpc('pfsa_admin_students').range(from,to)),
+        readAllRows<CloudRecord>((from,to)=>cloud.from('pfsa_records').select('*').order('created_at',{ascending:false}).order('id').range(from,to))
+      ]);
+      setProfiles(p);setRecords(r);
+    } else {
+      const [p,r]=await Promise.all([cloud.from('pfsa_profiles').select('*').order('name'),cloud.from('pfsa_records').select('*').order('created_at',{ascending:false})]);
+      if(p.error||r.error)throw p.error||r.error;
+      setProfiles(p.data||[]);setRecords(r.data||[]);
+    }
     setLoading(false);
   };
   useEffect(() => {
@@ -398,8 +404,7 @@ export function AcademyCloud({
             changes[key] = field(form, key) || null;
           const { error } = await cloud
             .from("pfsa_profiles")
-            .update(changes)
-            .eq("id", p.id);
+            .upsert({id:p.id,email:p.email,...changes},{onConflict:"id"});
           if (error) throw error;
         });
       }}
@@ -689,41 +694,7 @@ export function AcademyCloud({
             {notice}
           </p>
         )}
-        {isAdmin && tab === "Overview" && (
-          <>
-            <div className="cloud-grid">
-              {[
-                ["Candidates", profiles.length],
-                [
-                  "Applications",
-                  records.filter((r) => r.kind === "application").length,
-                ],
-                [
-                  "Projects",
-                  records.filter((r) => r.kind === "submission").length,
-                ],
-                [
-                  "Pending payments",
-                  records.filter(
-                    (r) => r.kind === "payment" && r.data.status === "pending",
-                  ).length,
-                ],
-              ].map(([label, count]) => (
-                <article key={label}>
-                  <small>{label}</small>
-                  <h2>{count}</h2>
-                </article>
-              ))}
-            </div>
-            <section>
-              <h2>Academy operations</h2>
-              <p>
-                Manage candidates, publish dated task briefs, review projects,
-                confirm payments and issue documents using the navigation.
-              </p>
-            </section>
-          </>
-        )}
+        {isAdmin && ["Overview","Students & records","Batches","Weekly tracking"].includes(tab) && <AdminReports view={tab} profiles={profiles} records={records} busy={busy} run={run}/>}
         {isAdmin && tab === "Candidates" && (
           <section>
             <h2>Candidate directory</h2>
