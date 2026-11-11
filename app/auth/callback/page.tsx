@@ -1,5 +1,79 @@
 "use client";
-import {useEffect,useState} from 'react';
-import {cloud} from '@/lib/pfsa-cloud';
-import '@/components/academy-cloud.css';
-export default function Callback(){const[error,setError]=useState('');useEffect(()=>{let active=true;async function finish(){const params=new URLSearchParams(window.location.search);if(params.get('error_description'))throw new Error(params.get('error_description')!);const code=params.get('code');const {data:{session}}=await cloud.auth.getSession();if(code&&!session){const result=await cloud.auth.exchangeCodeForSession(code);if(result.error)throw result.error;}const {data:{user},error:authError}=await cloud.auth.getUser();if(authError)throw authError;if(!user)throw new Error('No authenticated account was returned. Please sign in again.');const profile=await cloud.from('pfsa_profiles').select('id').eq('id',user.id).maybeSingle();if(profile.error)throw profile.error;if(!profile.data){const result=await cloud.from('pfsa_profiles').insert({id:user.id,name:user.user_metadata.full_name||user.user_metadata.name||user.email?.split('@')[0]||'Student',email:user.email});if(result.error)throw result.error;}if(active){window.history.replaceState(null,'','/auth/callback');window.location.replace(user.app_metadata.pfsa_role==='admin'?'/admin':'/student');}}finish().catch(e=>active&&setError(e.message));return()=>{active=false;};},[]);return <main className="cloud-auth"><section><h1>{error?'Unable to complete sign-in':'Completing secure sign-in…'}</h1>{error&&<><p role="alert">{error}</p><a href="/login">Return to sign in</a></>}</section></main>}
+import { useEffect, useState } from "react";
+import { cloud } from "@/lib/pfsa-cloud";
+import {completePendingApplication} from '@/lib/application-flow';
+import "@/components/academy-cloud.css";
+export default function Callback() {
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function finish() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error_description"))
+        throw new Error(params.get("error_description")!);
+      const code = params.get("code");
+      const {
+        data: { session },
+      } = await cloud.auth.getSession();
+      if (code && !session) {
+        const result = await cloud.auth.exchangeCodeForSession(code);
+        if (result.error) throw result.error;
+      }
+      const {
+        data: { user },
+        error: authError,
+      } = await cloud.auth.getUser();
+      if (authError) throw authError;
+      if (!user)
+        throw new Error(
+          "No authenticated account was returned. Please sign in again.",
+        );
+      const profile = await cloud
+        .from("pfsa_profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile.error) throw profile.error;
+      if (!profile.data) {
+        const result = await cloud
+          .from("pfsa_profiles")
+          .insert({
+            id: user.id,
+            name:
+              user.user_metadata.full_name ||
+              user.user_metadata.name ||
+              user.email?.split("@")[0] ||
+              "Student",
+            email: user.email,
+          });
+        if (result.error) throw result.error;
+      }
+      if(user.app_metadata.pfsa_role!=='admin') await completePendingApplication(user.id);
+      if (active) {
+        window.history.replaceState(null, "", "/auth/callback");
+        window.location.replace(
+          user.app_metadata.pfsa_role === "admin" ? "/admin" : "/student",
+        );
+      }
+    }
+    finish().catch((e) => active && setError(e.message));
+    return () => {
+      active = false;
+    };
+  }, []);
+  return (
+    <main className="cloud-auth">
+      <section>
+        <h1>
+          {error ? "Unable to complete sign-in" : "Completing secure sign-in…"}
+        </h1>
+        {error && (
+          <>
+            <p role="alert">{error}</p>
+            <a href="/login">Return to sign in</a>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
