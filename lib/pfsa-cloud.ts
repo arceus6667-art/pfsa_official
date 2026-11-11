@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-// Keep the existing live connection until the requested PFSA project has been provisioned.
-// Set both public values together when switching; service-role keys must never be used here.
+const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxiqubmkzqvspnzdasiz.supabase.co';
+const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_njEa_dFKOjPf886kpx-rQw_VJUhUk2q';
+// This is a browser-safe publishable key. Privileged keys must never be used here.
 export const googleSignInConfigured = configuredUrl === 'https://rxiqubmkzqvspnzdasiz.supabase.co' && !!configuredKey;
-export const cloud = createClient(configuredUrl && configuredKey ? configuredUrl : 'https://ndtlhzrkonordpntyphe.supabase.co',configuredUrl && configuredKey ? configuredKey : 'sb_publishable_tGuLrcx7jPvArHSfwfmOUw_Gz0yCGpl', {auth:{flowType:'pkce'}});
+export const cloud = createClient(configuredUrl,configuredKey, {auth:{flowType:'pkce'}});
 export type RecordKind = 'application'|'submission'|'resource'|'task'|'payment'|'document'|'support';
 export type CloudRecord = {id:string;kind:RecordKind;user_id:string|null;data:Record<string,string|number>;created_at:string};
 export type Profile = {id:string;name:string;email:string;phone:string;city:string;linkedin:string;github:string;cohort:string;start_date:string|null};
@@ -26,3 +25,4 @@ export async function addRecord(kind:RecordKind,userId:string|null,data:CloudRec
  if(result.error) throw result.error;
  return result.data as CloudRecord;
 }
+
