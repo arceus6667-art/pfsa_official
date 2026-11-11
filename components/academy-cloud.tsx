@@ -13,6 +13,8 @@ import {
 import { programmes, packages } from "@/lib/pfsa-data";
 import "./academy-cloud.css";
 import { DomainGuides } from "./domain-guides";
+import {AuthAccess} from "./auth-access";
+import {confirmDocumentName,ensureDocumentIdentity} from "@/lib/auth-flow";
 import {AdminReports} from "./admin-reports";
 import {readAllRows} from "@/lib/admin-pagination";
 import {CertificationCards} from "./certification-cards";
@@ -109,7 +111,7 @@ export function AcademyCloud({
       setLoading(false);
       return;
     }
-    if(page==="student" && current.app_metadata.pfsa_role!=="admin") await completePendingApplication(current.id);
+    if(page==="student" && current.app_metadata.pfsa_role!=="admin") { if(!await ensureDocumentIdentity(current))return;await completePendingApplication(current.id); }
     if(current.app_metadata.pfsa_role==='admin') {
       const [p,r]=await Promise.all([
         readAllRows<Profile>((from,to)=>cloud.rpc('pfsa_admin_students').range(from,to)),
@@ -219,7 +221,7 @@ export function AcademyCloud({
         if (u) {
           const { data: existing, error: readError } = await cloud
             .from("pfsa_profiles")
-            .select("id")
+            .select("id,name,name_confirmed_at")
             .eq("id", u.id)
             .maybeSingle();
           if (readError) throw readError;
@@ -236,7 +238,14 @@ export function AcademyCloud({
               });
             if (error) throw error;
           }
-          if(u.app_metadata.pfsa_role!=="admin") await completePendingApplication(u.id);
+          if(u.app_metadata.pfsa_role!=="admin") {
+            if(!existing?.name_confirmed_at && !(u.app_metadata.providers||[]).includes('google')) {
+              const name=field(form,'name')||existing?.name||u.user_metadata.name;
+              if(name)await confirmDocumentName(name);
+            }
+            if(!await ensureDocumentIdentity(u))return;
+            await completePendingApplication(u.id);
+          }
         window.location.assign(
             u.app_metadata.pfsa_role === "admin" ? "/admin" : "/student",
           );
@@ -437,86 +446,14 @@ export function AcademyCloud({
                   : "text"
             }
             required={key === "name"}
+            readOnly={!isAdmin && key === "name"}
           />
         </label>
       ))}
       <button disabled={busy}>Save profile</button>
     </form>
   );
-  if (["login", "register", "admin-login"].includes(page))
-    return (
-      <main className="cloud-auth">
-        <a href="/">← Pramaan Forensics Academy</a>
-        <section>
-          <p>ACADEMY ACCESS</p>
-          <h1>
-            {page === "register"
-              ? "Create your account"
-              : page === "admin-login"
-                ? "Staff sign in"
-                : "Welcome back"}
-          </h1>
-          {googleSignInConfigured && (
-            <button
-              disabled={busy}
-              onClick={() =>
-                run(async () => {
-                  const { error } = await cloud.auth.signInWithOAuth({
-                    provider: "google",
-                    options: {
-                      redirectTo: window.location.origin + "/auth/callback",
-                      scopes: "email profile",
-                    },
-                  });
-                  if (error) throw error;
-                }, "Redirecting to Google…")
-              }
-            >
-              Continue with Google
-            </button>
-          )}
-          <form onSubmit={auth}>
-            {page === "register" && (
-              <label>
-                Full name
-                <input required name="name" autoComplete="name" />
-              </label>
-            )}
-            <label>
-              Email
-              <input name="email" type="email" required autoComplete="email" />
-            </label>
-            <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={
-                  page === "register" ? "new-password" : "current-password"
-                }
-              />
-            </label>
-            <button disabled={busy}>
-              {busy
-                ? "Please wait…"
-                : page === "register"
-                  ? "Create account"
-                  : "Sign in"}
-            </button>
-          </form>
-          <p role="status">{notice}</p>
-          <a href={page === "register" ? "/login" : "/register"}>
-            {page === "register"
-              ? "Already registered? Sign in"
-              : "Create student account"}
-          </a>
-          <a href="/reset-password">Forgot password?</a>
-          <a href="/admin/login">Staff access</a>
-        </section>
-      </main>
-    );
+  if (["login", "register", "admin-login"].includes(page)) return <AuthAccess page={page} busy={busy} notice={notice} onPassword={auth} google={()=>void run(async()=>{const {error}=await cloud.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth/callback',scopes:'email profile'}});if(error)throw error;},'Redirecting to Google…')}/>;
   if (page === "verify")
     return (
       <main className="cloud-auth">
@@ -576,7 +513,7 @@ export function AcademyCloud({
                     return;
                   }
                   run(
-                    async () => { await completePendingApplication(user.id);window.location.assign("/student"); },
+                    async () => { if(await completePendingApplication(user.id))window.location.assign("/student"); },
                     "Application submitted.",
                   );
                 }}

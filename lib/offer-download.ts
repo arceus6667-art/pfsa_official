@@ -1,22 +1,45 @@
 import type {CloudRecord} from './pfsa-cloud';
 import {programmes} from './pfsa-data';
-// Render the published offer record, including Unicode names, into a downloadable PDF.
+import {academy} from './academy-config';
+const date=(value:string)=>new Date(value.length===10?value+'T00:00:00+05:30':value).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'long',year:'numeric'});
+async function loadImage(src:string){const image=new Image();image.src=src;await image.decode();return image;}
 export async function downloadOffer(record:CloudRecord){
+ if(record.kind!=='document'||record.data.type!=='Offer Letter'||record.data.status!=='published')throw Error('Only a published offer letter can be downloaded.');
  const canvas=document.createElement('canvas');canvas.width=1240;canvas.height=1754;
- const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Your browser cannot generate the offer PDF.');
- ctx.fillStyle='#fff';ctx.fillRect(0,0,1240,1754);ctx.fillStyle='#142542';
- ctx.font='bold 34px Arial';ctx.fillText('PRAMAAN FORENSICS ACADEMY',100,130);
- ctx.fillStyle='#b88b3d';ctx.fillRect(100,165,1040,4);ctx.font='bold 32px Arial';ctx.fillText('INTERNSHIP OFFER LETTER',100,260);
- ctx.fillStyle='#142542';ctx.font='24px Arial';let y=340;
- const line=(text:string)=>{const words=text.split(/\s+/);let row='';for(const word of words){if(ctx.measureText(row+word).width>1020){ctx.fillText(row,100,y);y+=38;row='';}row+=word+' ';}if(row){ctx.fillText(row,100,y);y+=38;}y+=16;};
- line('Offer number: '+record.data.number);line('Issued: '+new Date(record.created_at).toLocaleDateString('en-IN'));line('Dear '+record.data.candidate+',');
- line('You are enrolled in the '+(programmes.find(p=>p.id===record.data.programme)?.title||record.data.programme)+' virtual internship programme at Pramaan Forensics Academy.');
- line('Programme duration: four weeks. Your weekly task guides and deadlines are available in your student workspace.');
- line('Complete and submit all four weekly projects, along with the required descriptions. Completion documents are subject to assessment and the applicable document-service fees.');
- line('This is a system-issued training offer. It is not an employment offer or a guarantee of a recommendation.');
- line('Verify this offer at: '+window.location.origin+'/verify');
- line('Enter document number: '+record.data.number);
- ctx.font='20px Arial';ctx.fillStyle='#69778d';ctx.fillText('Precision in Science. Integrity in Evidence.',100,1600);
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Your browser cannot generate the offer PDF.');
+ const [logo,msme,stamp]=await Promise.all([loadImage(academy.logo),loadImage(academy.msme),loadImage(academy.stamp)]);
+ ctx.fillStyle='#fffefa';ctx.fillRect(0,0,1240,1754);
+ ctx.drawImage(logo,76,48,165,170);ctx.drawImage(msme,875,75,285,134);
+ ctx.fillStyle='#10223e';ctx.font='bold 48px Georgia';ctx.fillText('PRAMAAN',275,100);
+ ctx.font='bold 28px Georgia';ctx.fillText('FORENSICS ACADEMY',275,147);
+ ctx.font='italic 18px Georgia';ctx.fillText('Precision in Science. Integrity in Evidence.',275,185);
+ ctx.font='18px Arial';ctx.fillText(academy.email,76,260);ctx.fillText(academy.phone,540,260);ctx.fillText(academy.website,890,260);
+ ctx.fillStyle='#b58a3b';ctx.fillRect(76,292,1088,2);
+ ctx.fillStyle='#10223e';ctx.font='bold 35px Georgia';ctx.fillText('INTERNSHIP OFFER LETTER',76,365);
+ ctx.font='17px Arial';ctx.fillText('Offer Letter ID: '+record.data.number,76,412);ctx.fillText('Date: '+date(record.created_at),845,440);
+ ctx.font='23px Georgia';let y=505;
+ const line=(text:string,bold=false)=>{
+  ctx.font=(bold?'bold ':'')+'23px Georgia';
+  const tokens=text.split(/(\s+)/);let row='';
+  const flush=()=>{ctx.fillText(row.trimEnd(),76,y);y+=34;row='';};
+  for(const token of tokens){if(ctx.measureText(row+token).width>1088&&row.trim())flush();if(ctx.measureText(token).width>1088){for(const ch of token){if(ctx.measureText(row+ch).width>1088)flush();row+=ch;}}else row+=token;}
+  if(row.trim())flush();y+=22;
+ };
+ line('Dear '+record.data.candidate+',',true);
+ const domain=programmes.find(p=>p.id===record.data.programme)?.title||String(record.data.programme);
+ line('We are pleased to offer you a four-week virtual internship in '+domain+' with '+academy.name+'.');
+ line('Your internship will run from '+date(String(record.data.start_date||academy.start))+' to '+date(String(record.data.end_date||academy.end))+' as part of '+String(record.data.batch||academy.batch)+'.');
+ line('This structured programme will help you develop foundational forensic knowledge, evidence documentation skills and analytical reasoning through guided independent learning.');
+ line('You will complete four weekly assignments supported by domain-specific task briefs and resources. Submit your project work and the required descriptions through the student portal.');
+ line('Follow the published guidance, maintain academic integrity and confidentiality, and respond professionally to assessment feedback. Completion documents and recommendations are subject to assessment and the applicable eligibility and document-service terms.');
+ line('We look forward to welcoming you and supporting your learning journey.');
+ line('Best regards,',true);
+ if(y>1480)throw Error('The offer details are too long for this layout. Please contact academy staff.');
+ ctx.drawImage(stamp,535,1460,170,170);
+ ctx.strokeStyle='#10223e';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(76,1550);ctx.lineTo(470,1550);ctx.moveTo(775,1550);ctx.lineTo(1164,1550);ctx.stroke();
+ ctx.fillStyle='#10223e';ctx.font='bold 24px Georgia';ctx.fillText(academy.founder,76,1590);ctx.fillText(academy.coordinator,775,1590);
+ ctx.font='21px Georgia';ctx.fillText('Founder',76,1624);ctx.fillText('Programme Coordinator',775,1624);
+ ctx.fillStyle='#b58a3b';ctx.fillRect(76,1680,1088,2);
  const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Unable to render offer.')),'image/jpeg',0.95));
  const jpeg=new Uint8Array(await image.arrayBuffer()),enc=new TextEncoder(),parts:Uint8Array[]=[],offsets=[0];let length=0;
  const push=(v:string|Uint8Array)=>{const bytes=typeof v==='string'?enc.encode(v):v;parts.push(bytes);length+=bytes.length;};
