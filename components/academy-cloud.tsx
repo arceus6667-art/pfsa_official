@@ -14,6 +14,7 @@ import { programmes, packages } from "@/lib/pfsa-data";
 import "./academy-cloud.css";
 import { DomainGuides } from "./domain-guides";
 import {CertificationCards} from "./certification-cards";
+import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
 
@@ -84,6 +85,7 @@ export function AcademyCloud({
   const programme = programmes.find(
     (p) => p.id === application?.data.programme,
   );
+  const offer = own.find(r => r.kind === 'document' && r.data.type === 'Offer Letter' && r.data.status === 'published' && r.data.programme === programme?.id);
   const tasks = records.filter(
     (r) =>
       r.kind === "task" && r.data.programme === application?.data.programme,
@@ -913,12 +915,18 @@ export function AcademyCloud({
                   <div>
                     <b>
                       {profiles.find((p) => p.id === r.user_id)?.name} · ₹
-                      {r.data.package}
+                      {r.data.amount || r.data.package} · {orderName(String(r.data.package))}
                     </b>
                     <p>
                       UTR: {r.data.utr} · {r.data.status}
                     </p>
                     <p>{r.data.address}</p>
+                    <p>Estimated completion: {reviewDue(r)?.toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})} IST · Terms: {r.data.terms_accepted_at ? 'Accepted ' + r.data.terms_accepted_at : 'Legacy order'}</p>
+                    <p>Email: {profiles.find(p => p.id === r.user_id)?.email} · {r.data.email_delivered_at ? 'Staff recorded dispatch' : 'Awaiting staff email dispatch'}</p>
+                    {orderReady(r, records.filter(d => d.user_id === r.user_id)) && <div className="cloud-controls">
+                      <a href={'mailto:' + encodeURIComponent(profiles.find(p => p.id === r.user_id)?.email || '') + '?subject=' + encodeURIComponent('Your PFSA internship documents') + '&body=' + encodeURIComponent('Congratulations on completing your internship! Your ' + orderName(String(r.data.package)) + ' are ready. Please find your documents in the PFSA portal: https://pramaan-forensics-academy.arceus6667.chatgpt.site/student\n\nPFSA Academy Team')}>Prepare document delivery email ↗</a>
+                      <button disabled={busy || !!r.data.email_delivered_at} onClick={() => { if(window.confirm('Have you actually sent the ordered documents to this student’s registered email? This records your confirmation; it does not send an email.')) void run(() => update(r, {email_delivered_at:new Date().toISOString()}), 'Email dispatch recorded.'); }}>Confirm email was sent</button>
+                    </div>}
                   </div>
                   {renderFile(r)}
                   <button
@@ -1022,15 +1030,9 @@ export function AcademyCloud({
                   <button onClick={() => setTab("Tasks")}>Open tasks</button>
                 </article>
                 <article>
-                  <small>Documents</small>
-                  <h3>
-                    {completed
-                      ? "Available for review"
-                      : "Complete your four weekly tasks"}
-                  </h3>
-                  <button onClick={() => setTab("Certification")}>
-                    View documents
-                  </button>
+                  <small>Offer Letter</small>
+                  <h3>Your internship offer</h3>
+                  {offer ? <button disabled={busy} onClick={() => run(() => offer.data.path ? openFile(String(offer.data.path)) : downloadOffer(offer), 'Offer letter download ready.')}>Download your offer letter</button> : <p>{application ? 'Your offer letter is being prepared.' : 'Enrol in an internship to receive your offer letter.'}</p>}
                 </article>
               </div>
             </section>
@@ -1236,7 +1238,7 @@ export function AcademyCloud({
             ) && <p>No resources have been published for your domain.</p>}
           </section>
         )}
-        {!isAdmin && tab === "Certification" && <CertificationCards records={own} userId={user.id} programme={programme?.id} completed={completed} busy={busy} run={run}/>}
+        {!isAdmin && tab === "Certification" && <CertificationCards records={own} userId={user.id} email={me?.email || user.email} programme={programme?.id} completed={completed} busy={busy} run={run}/>}
 
       </div>
     </main>
