@@ -60,16 +60,22 @@ insert into storage.buckets(id,name,public,file_size_limit) values('pfsa-files',
 create policy pfsa_upload on storage.objects for insert to authenticated with check(bucket_id='pfsa-files' and (storage.foldername(name))[1]=(select auth.uid())::text);
 create policy pfsa_file_read on storage.objects for select to authenticated using(bucket_id='pfsa-files' and ((storage.foldername(name))[1]=(select auth.uid())::text or (select auth.jwt()->'app_metadata'->>'pfsa_role')='admin' or exists(select 1 from public.pfsa_records r where r.kind in ('resource','task') and r.data->>'path'=name)));
 create policy pfsa_file_delete on storage.objects for delete to authenticated using(bucket_id='pfsa-files' and ((storage.foldername(name))[1]=(select auth.uid())::text or (select auth.jwt()->'app_metadata'->>'pfsa_role')='admin'));
--- Public verification exposes only deliberately published document fields.
-create view public.pfsa_public_documents with(security_invoker=true) as select data->>'number' as number,data->>'type' as type,data->>'candidate' as candidate,created_at from public.pfsa_records where kind='document' and data->>'status'='published';
-grant select on public.pfsa_public_documents,public.pfsa_records to anon;
-create policy pfsa_public_verification on public.pfsa_records for select to anon using(false);
--- Public records stay inaccessible. A narrow verification RPC returns only the
--- issued number, candidate and type, never private file paths or payment details.
-create function public.pfsa_verify(document_number text) returns table(number text,type text,candidate text,issued_at timestamptz)
-language sql stable security definer set search_path='' as $$
- select data->>'number',data->>'type',data->>'candidate',created_at from public.pfsa_records
- where kind='document' and data->>'status'='published' and data->>'number'=document_number limit 1;
-$$;
+-- Public verification uses a separate projection containing no private file paths.
+create table public.pfsa_public_documents(id uuid primary key,number text unique not null,type text not null,candidate text not null,issued_at timestamptz not null);
+alter table public.pfsa_public_documents enable row level security;
+grant select on public.pfsa_public_documents to anon,authenticated;
+grant insert,update,delete on public.pfsa_public_documents to authenticated;
+create policy pfsa_verification_read on public.pfsa_public_documents for select to anon,authenticated using(true);
+create policy pfsa_verification_staff on public.pfsa_public_documents for all to authenticated using((select auth.jwt()->'app_metadata'->>'pfsa_role')='admin') with check((select auth.jwt()->'app_metadata'->>'pfsa_role')='admin');
+create function public.pfsa_verify(document_number text) returns table(number text,type text,candidate text,issued_at timestamptz) language sql stable security invoker set search_path='' as $$ select number,type,candidate,issued_at from public.pfsa_public_documents where number=document_number limit 1; $$;
 revoke all on function public.pfsa_verify(text) from public;
 grant execute on function public.pfsa_verify(text) to anon,authenticated;
+create function public.pfsa_sync_verification() returns trigger language plpgsql security invoker set search_path='' as $$ begin
+if TG_OP='DELETE' then delete from public.pfsa_public_documents where id=old.id;return old;end if;
+if new.kind='document' then
+ delete from public.pfsa_public_documents where id=new.id;
+ if new.data->>'status'='published' then insert into public.pfsa_public_documents values(new.id,new.data->>'number',new.data->>'type',new.data->>'candidate',new.created_at);end if;
+end if;return new;end $$;
+revoke all on function public.pfsa_sync_verification() from public;
+create trigger pfsa_sync_verification after insert or update or delete on public.pfsa_records for each row execute function public.pfsa_sync_verification();
+alter publication supabase_realtime add table public.pfsa_records,public.pfsa_profiles;

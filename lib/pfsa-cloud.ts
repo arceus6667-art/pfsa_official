@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-export const cloud = createClient('https://ndtlhzrkonordpntyphe.supabase.co','sb_publishable_tGuLrcx7jPvArHSfwfmOUw_Gz0yCGpl');
+const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+// Keep the existing live connection until the requested PFSA project has been provisioned.
+// Set both public values together when switching; service-role keys must never be used here.
+export const googleSignInConfigured = configuredUrl === 'https://rxiqubmkzqvspnzdasiz.supabase.co' && !!configuredKey;
+export const cloud = createClient(configuredUrl && configuredKey ? configuredUrl : 'https://ndtlhzrkonordpntyphe.supabase.co',configuredUrl && configuredKey ? configuredKey : 'sb_publishable_tGuLrcx7jPvArHSfwfmOUw_Gz0yCGpl', {auth:{flowType:'pkce'}});
 export type RecordKind = 'application'|'submission'|'resource'|'task'|'payment'|'document'|'support';
 export type CloudRecord = {id:string;kind:RecordKind;user_id:string|null;data:Record<string,string|number>;created_at:string};
 export type Profile = {id:string;name:string;email:string;phone:string;city:string;linkedin:string;github:string;cohort:string;start_date:string|null};
