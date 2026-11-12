@@ -18,6 +18,7 @@
 .start-plan input,.start-consent input{width:22px;height:22px;accent-color:#a77a2e;flex-shrink:0;}
 .start-plan h2,.start-confirm h2{font:28px Georgia,serif;margin:22px 0 12px;}
 .start-price{font:700 40px Georgia,serif;margin:22px 0 12px;}
+.start-price s{font:400 23px Arial,sans-serif;color:var(--start-muted);text-decoration-thickness:2px;margin-right:8px;}
 .start-price small{font:13px Arial,sans-serif;color:var(--start-muted);display:block;margin-top:7px;}
 .start-plan ul{padding-left:20px;line-height:2;color:var(--start-muted);font-size:14px;}
 .start-plan.unavailable{opacity:.65;cursor:default;}

@@ -583,7 +583,7 @@ export function AcademyCloud({
           >
             {dark ? "☀" : "☾"}
           </button>
-          <button onClick={() => setTab(isAdmin ? "Candidates" : "Profile")}>
+          <button title={me?.name || user.email} onClick={() => setTab(isAdmin ? "Candidates" : "Profile")}>
             {me?.name || user.email}
           </button>
           <button
@@ -1037,7 +1037,7 @@ export function AcademyCloud({
           <section>
             <DomainGuides programme={programme?.id} />
             <h2>Four-week internship roadmap</h2>
-            <div className="cloud-controls">
+            <div className="cloud-controls cloud-week-tabs">
               {[1, 2, 3, 4].map((w) => (
                 <button
                   className={w === week ? "active" : ""}

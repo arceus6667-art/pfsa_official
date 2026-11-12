@@ -4,6 +4,8 @@
     "title": "Computer & Cyber Forensics",
     "url": "/guides/computer-cyber-task-guide.pdf",
     "dataset": "/guides/computer-cyber-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,
@@ -36,6 +38,8 @@
     "title": "Mobile Device Forensics",
     "url": "/guides/mobile-task-guide.pdf",
     "dataset": "/guides/mobile-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,
@@ -68,6 +72,8 @@
     "title": "Network Forensics",
     "url": "/guides/network-task-guide.pdf",
     "dataset": "/guides/network-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,
@@ -100,6 +106,8 @@
     "title": "Cloud Forensics",
     "url": "/guides/cloud-task-guide.pdf",
     "dataset": "/guides/cloud-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,
@@ -132,6 +140,8 @@
     "title": "Database Forensics",
     "url": "/guides/database-task-guide.pdf",
     "dataset": "/guides/database-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,
@@ -164,6 +174,8 @@
     "title": "IoT & Digital Device Forensics",
     "url": "/guides/iot-task-guide.pdf",
     "dataset": "/guides/iot-training-data.zip",
+    "pages": 10,
+    "version": "2.0",
     "weeks": [
       {
         "week": 1,

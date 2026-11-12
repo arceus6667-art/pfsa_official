@@ -1,0 +1,176 @@
+{
+  "computer-cyber": [
+    {
+      "title": "Guide to Integrating Forensic Techniques into Incident Response",
+      "author": "Karen Kent et al. / NIST",
+      "edition": "SP 800-86, 2006",
+      "kind": "Forensic reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/86/final",
+      "use": "Read for evidence collection, examination, analysis and reporting concepts."
+    },
+    {
+      "title": "Incident Response Recommendations and Considerations for Cybersecurity Risk Management",
+      "author": "Alexander Nelson et al. / NIST",
+      "edition": "SP 800-61 Rev. 3, 2025",
+      "kind": "Incident response reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r3.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+      "use": "Connect findings and evidence handling to a wider incident response process."
+    },
+    {
+      "title": "Guide to Malware Incident Prevention and Handling for Desktops and Laptops",
+      "author": "Murugiah Souppaya and Karen Scarfone / NIST",
+      "edition": "SP 800-83 Rev. 1, 2013",
+      "kind": "Defensive reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-83r1.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/83/r1/final",
+      "use": "Understand defensive handling and evidence context; the PFSA lab contains no live malware."
+    }
+  ],
+  "mobile": [
+    {
+      "title": "Guidelines on Mobile Device Forensics",
+      "author": "Richard Ayers, Sam Brothers and Wayne Jansen / NIST",
+      "edition": "SP 800-101 Rev. 1, 2014",
+      "kind": "Mobile forensic reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-101r1.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/101/r1/final",
+      "use": "Distinguish preservation, acquisition, examination and reporting; account for the age of device examples."
+    },
+    {
+      "title": "Guidelines for Managing the Security of Mobile Devices in the Enterprise",
+      "author": "Gema Howell et al. / NIST",
+      "edition": "SP 800-124 Rev. 2, 2023",
+      "kind": "Mobile security reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-124r2.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/124/r2/final",
+      "use": "Understand device lifecycle, management context and privacy boundaries."
+    },
+    {
+      "title": "Vetting the Security of Mobile Applications",
+      "author": "Michael Ogata et al. / NIST",
+      "edition": "SP 800-163 Rev. 1, 2019",
+      "kind": "Application assessment reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-163r1.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/163/r1/final",
+      "use": "Learn how app assessment claims need a defined scope and evidence; this is background reading, not an app exploitation lab."
+    }
+  ],
+  "network": [
+    {
+      "title": "An Introduction to Computer Networks",
+      "author": "Peter L. Dordal",
+      "edition": "Release 2.0.11, 2023",
+      "kind": "Open textbook",
+      "url": "https://intronetworks.cs.luc.edu/current/ComputerNetworks.pdf",
+      "source": "https://intronetworks.cs.luc.edu/current/",
+      "use": "Study IP, DNS, transport protocols and the meaning of flow metadata."
+    },
+    {
+      "title": "Wireshark User's Guide",
+      "author": "Wireshark contributors / Wireshark Foundation",
+      "edition": "Maintained online edition",
+      "kind": "Software reference manual",
+      "url": "https://www.wireshark.org/download/docs/Wireshark%20User%27s%20Guide.pdf",
+      "source": "https://www.wireshark.org/download/docs/",
+      "use": "Read interface and offline-analysis chapters; live capture is outside the supplied CSV lab."
+    },
+    {
+      "title": "Guide to Computer Security Log Management",
+      "author": "Karen Kent and Murugiah Souppaya / NIST",
+      "edition": "SP 800-92, 2006",
+      "kind": "Log management reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-92.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/92/final",
+      "use": "Understand log collection, retention, timestamp context and review limitations."
+    }
+  ],
+  "cloud": [
+    {
+      "title": "NIST Cloud Computing Forensic Reference Architecture",
+      "author": "Martin Herman et al. / NIST",
+      "edition": "SP 800-201, 2024",
+      "kind": "Cloud forensic reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-201.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/201/final",
+      "use": "Map forensic readiness and responsibility boundaries to a cloud evidence case."
+    },
+    {
+      "title": "NIST Cloud Computing Forensic Science Challenges",
+      "author": "Martin Herman et al. / NIST",
+      "edition": "IR 8006, 2020",
+      "kind": "Cloud forensic research reference",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ir/2020/NIST.IR.8006.pdf",
+      "source": "https://csrc.nist.gov/pubs/ir/8006/final",
+      "use": "Identify gaps caused by tenancy, retention, time and provider visibility."
+    },
+    {
+      "title": "Guidelines on Security and Privacy in Public Cloud Computing",
+      "author": "Wayne Jansen and Timothy Grance / NIST",
+      "edition": "SP 800-144, 2011",
+      "kind": "Cloud security reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-144.pdf",
+      "source": "https://csrc.nist.gov/pubs/sp/800/144/final",
+      "use": "Build foundational context for provider responsibilities and evidence scope; consult current provider documentation for product details."
+    }
+  ],
+  "database": [
+    {
+      "title": "Database Design - 2nd Edition",
+      "author": "Adrienne Watt and contributors / BCcampus",
+      "edition": "Second edition",
+      "kind": "Open textbook",
+      "url": "https://opentextbc.ca/dbdesign01/open/download?type=pdf",
+      "source": "https://opentextbc.ca/dbdesign01/",
+      "use": "Study relational design, keys, integrity and SQL concepts."
+    },
+    {
+      "title": "PostgreSQL 18 Documentation",
+      "author": "PostgreSQL Global Development Group",
+      "edition": "Version 18 manual",
+      "kind": "Database reference manual",
+      "url": "https://www.postgresql.org/files/documentation/pdf/18/postgresql-18-A4.pdf",
+      "source": "https://www.postgresql.org/docs/",
+      "use": "Read the SQL tutorial and transaction concepts; PostgreSQL syntax is not automatically valid in the SQLite exercise."
+    },
+    {
+      "title": "Foundations of Databases",
+      "author": "Serge Abiteboul, Richard Hull and Victor Vianu",
+      "edition": "Author-provided book draft, 1995",
+      "kind": "Author download page / textbook",
+      "url": "https://webdam.di.ens.fr/Alice/",
+      "source": "https://webdam.di.ens.fr/Alice/",
+      "use": "Use the full PDF link on the authors page for personal study of relational models, keys and dependencies. The authors permit a personal copy but prohibit redistribution."
+    }
+  ],
+  "iot": [
+    {
+      "title": "Introduction to Embedded Systems: A Cyber-Physical Systems Approach",
+      "author": "Edward A. Lee and Sanjit A. Seshia",
+      "edition": "Second edition, MIT Press, 2017",
+      "kind": "Author-provided textbook",
+      "url": "https://ptolemy.berkeley.edu/books/leeseshia/releases/LeeSeshia_DigitalV2_2.pdf",
+      "source": "https://ptolemy.berkeley.edu/books/leeseshia/download.html",
+      "use": "Study models, time and interactions between computing and physical processes."
+    },
+    {
+      "title": "The Internet of Things: An Overview",
+      "author": "Karen Rose, Scott Eldridge and Lyman Chapin / Internet Society",
+      "edition": "2015 overview",
+      "kind": "Technical overview",
+      "url": "https://www.internetsociety.org/wp-content/uploads/2017/08/ISOC-IoT-Overview-20151221-en.pdf",
+      "source": "https://www.internetsociety.org/resources/doc/2015/iot-overview/",
+      "use": "Read about IoT communication models, interoperability and privacy context."
+    },
+    {
+      "title": "IoT Device Cybersecurity Capability Core Baseline",
+      "author": "Michael Fagan et al. / NIST",
+      "edition": "IR 8259A, 2020",
+      "kind": "IoT technical reference guide",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ir/2020/NIST.IR.8259A.pdf",
+      "source": "https://csrc.nist.gov/pubs/ir/8259/a/final",
+      "use": "Relate device identification, configuration and state awareness to an evidence inventory."
+    }
+  ]
+}
