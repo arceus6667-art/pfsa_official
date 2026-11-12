@@ -18,6 +18,7 @@ import {confirmDocumentName,ensureDocumentIdentity} from "@/lib/auth-flow";
 import {AdminReports} from "./admin-reports";
 import {readAllRows} from "@/lib/admin-pagination";
 import {CertificationCards} from "./certification-cards";
+import {profileChanges} from "@/lib/profile-fields";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
@@ -400,20 +401,10 @@ export function AcademyCloud({
         e.preventDefault();
         const form = e.currentTarget;
         run(async () => {
-          const changes: Record<string, string | null> = {};
-          for (const key of [
-            "name",
-            "phone",
-            "city",
-            "linkedin",
-            "github",
-            "cohort",
-            "start_date",
-          ])
-            changes[key] = field(form, key) || null;
-          const { error } = await cloud
-            .from("pfsa_profiles")
-            .upsert({id:p.id,email:p.email,...changes},{onConflict:"id"});
+          const changes=profileChanges(key=>field(form,key),isAdmin);
+          const { error } = isAdmin
+            ? await cloud.from('pfsa_profiles').upsert({id:p.id,email:p.email,...changes},{onConflict:'id'})
+            : await cloud.from('pfsa_profiles').update(changes).eq('id',p.id);
           if (error) throw error;
         });
       }}
@@ -434,7 +425,7 @@ export function AcademyCloud({
         ] as const
       ).map((key) => (
         <label key={key}>
-          {key.replace("_", " ")}
+          {key === 'cohort' ? 'Batch' : key.replace("_", " ")}
           <input
             name={key}
             defaultValue={p[key] || ""}
@@ -446,8 +437,9 @@ export function AcademyCloud({
                   : "text"
             }
             required={key === "name"}
-            readOnly={!isAdmin && key === "name"}
+            readOnly={!isAdmin && ['name','cohort','start_date'].includes(key)}
           />
+          {!isAdmin && ['cohort','start_date'].includes(key) && <small>Assigned by academy staff</small>}
         </label>
       ))}
       <button disabled={busy}>Save profile</button>

@@ -1,0 +1,40 @@
+/* Layout fixes only: retain the existing colours, components and navigation. */
+.cloud-shell,.cloud-auth,.cloud-catalogue,.pfsa-access{box-sizing:border-box;max-width:100%;}
+.cloud-main,.cloud-main section,.cloud-main article,.cloud-form,.cloud-form label,.access-layout,.access-card,.access-layout aside,.admin-reports{min-width:0;}
+.cloud-main h1,.cloud-main h2,.cloud-main h3,.cloud-main p,.cloud-order-status,.cloud-row{overflow-wrap:anywhere;}
+.cloud-shell input[readonly]{cursor:default;opacity:.85;}
+.cloud-shell .cloud-form input[type=file]{max-width:100%;overflow:hidden;}
+.cloud-shell input[type=file]::file-selector-button{border:0;border-radius:6px;padding:10px 12px;margin-right:10px;background:#173151;color:#fff;font-weight:600;cursor:pointer;}
+.cloud-dark input[type=file]::file-selector-button{background:#d6b36e;color:#10223e;}
+.cloud-shell nav{scrollbar-width:thin;max-width:100%;}
+.cloud-calendar,.admin-table-wrap{max-width:100%;overscroll-behavior-x:contain;}
+.pfsa-access input,.cloud-shell input,.cloud-shell textarea,.cloud-shell select{box-sizing:border-box;}
+@media(max-width:600px){
+ .cloud-main{padding:16px 12px;}
+ .cloud-main section,.cloud-grid>article{padding:18px 16px;}
+ .cloud-grid{grid-template-columns:minmax(0,1fr);gap:14px;}
+ .cloud-form{grid-template-columns:minmax(0,1fr);gap:16px;}
+ .cloud-shell header{gap:14px;align-items:flex-start;}
+ .cloud-brand{gap:10px;min-width:0;}
+ .cloud-brand img{width:48px;height:48px;}
+ .cloud-shell header>div{gap:6px;max-width:100%;}
+ .cloud-shell header button{padding:10px 12px;min-height:44px;max-width:100%;overflow-wrap:anywhere;}
+ .cloud-shell nav{padding:0 8px;}
+ .cloud-shell nav button{padding:15px 12px;min-height:48px;}
+ .cloud-heading h1{font-size:30px;}
+ .cloud-row{gap:12px;}
+ .cloud-row>div:first-child{min-width:0;flex-basis:100%;}
+ .cloud-main button,.access-card button{min-height:44px;white-space:normal;}
+ .cloud-form input,.cloud-form textarea,.cloud-form select,.access-card input{font-size:16px;}
+ .cloud-payment-terms,.cloud-order-status,.cloud-bundle{padding:18px 14px;}
+ .admin-reports .admin-report-filters{align-items:stretch;}
+ .admin-reports .admin-report-filters label{min-width:0;width:100%;}
+ .admin-reports .admin-report-filters>button{width:100%;}
+ .admin-reports td,.admin-reports th{padding:12px;}
+ .pfsa-access{padding:16px 12px;}
+ .access-layout{margin:22px auto;}
+ .access-layout aside,.access-card{padding:24px;}
+ .access-layout aside h1{font-size:27px;}
+ .access-layout aside p{font-size:14px;}
+}
+@media(max-width:360px){.access-layout aside,.access-card{padding:20px;}.access-methods{gap:2px;}.access-methods button{font-size:10px;}.cloud-main section,.cloud-grid>article{padding:16px 12px;}}

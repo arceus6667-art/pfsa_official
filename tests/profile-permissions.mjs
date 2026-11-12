@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import ts from 'typescript';
+import assert from 'node:assert/strict';
+const js=ts.transpileModule(fs.readFileSync('lib/profile-fields.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {profileChanges}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const supplied={name:'Changed Name',email:'other@example.com',phone:'9594971961',city:'Mumbai',linkedin:'',github:'',cohort:'Fake Batch',start_date:'2040-01-01'};
+const student=profileChanges(key=>supplied[key],false),staff=profileChanges(key=>supplied[key],true);
+assert.deepEqual(Object.keys(student),['phone','city','linkedin','github']);
+assert.equal(student.phone,'9594971961');assert.equal(student.github,null);
+assert.ok(!('cohort' in student));assert.ok(!('start_date' in student));assert.ok(!('name' in student));assert.ok(!('email' in student));
+assert.equal(staff.cohort,'Fake Batch');assert.equal(staff.start_date,'2040-01-01');
+assert.ok(!('email' in staff));
+console.log('10 profile permission assertions passed: student payloads omit protected fields; authorised staff keep batch controls.');
