@@ -1,4 +1,6 @@
 "use client";
+import {PaymentReferenceInput} from './payment-reference-input';
+import {validPaymentReference,PAYMENT_REFERENCE_ERROR} from '@/lib/payment-reference';
 import { useEffect, useRef, useState } from 'react';
 import { addRecord, uploadFile, openFile, cloud, type CloudRecord } from '@/lib/pfsa-cloud';
 import { downloadOffer } from '@/lib/offer-download';
@@ -56,14 +58,15 @@ export function CertificationCards({ records, userId, email, programme, complete
     if (pricing.error || pricing.data !== PRICING_VERSION) throw new Error('Document pricing is being updated. Refresh the portal before paying.');
     if (policy.error || policy.data !== 'one-payment-v1') throw new Error('Checkout is awaiting the academy database update. Please contact Support before paying.');
     const data = new FormData(form), file = data.get('file') as File;
+    if(!validPaymentReference(String(data.get('utr')||'')))throw Error(PAYMENT_REFERENCE_ERROR);
     const path = file?.size ? await uploadFile(file, userId) : '';
     const result = await addRecord('payment', userId, { programme: programme || '', package: pack, amount: documentPrice(pack), price_version: PRICING_VERSION, utr: String(data.get('utr') || '').trim(), path, status: 'pending', terms_accepted: 1, terms_version: 'PFSA-DOCUMENTS-2026-11-12' });
     setSubmitted(result); setPack(null); setAccepted(false);
    }, 'Your order is submitted for manual review. Please do not pay again.').finally(() => { submitting.current = false; });
   }}>
    <h3>{orderName(pack)} · ₹{documentPrice(pack)}</h3>
-   <div className="cloud-payment-terms"><h3>Before you pay</h3><p>Congratulations on completing your four weekly submissions! Our team will verify your payment and assess your projects before issuing {orderName(pack)}.</p><p>Allow an estimated six hours from payment submission. Approved documents will be available in this portal and emailed to {email || 'your registered email address'}. Processing can take longer if verification needs follow-up.</p><p>Only one order is allowed. Confirm your selected package before paying. A UTR or screenshot does not automatically verify payment.</p><label className="cloud-consent"><input type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={busy}/><span>I accept these terms, including the estimated six-hour review, payment and project verification, and delivery to my registered email and portal.</span></label></div>
-   {accepted && policyReady && <><p>Pay once through GPay / UPI using the academy QR, then submit your transaction reference for staff review.</p><img className="cloud-qr" src="/assets/payment-qr.png" alt="Academy UPI payment QR"/><label>Transaction reference / UTR<input name="utr" required disabled={busy}/></label><label>Payment screenshot (optional)<input name="file" type="file" accept=".png,.jpg,.jpeg,.pdf" disabled={busy}/></label></>}
+   <div className="cloud-payment-terms"><h3>Before you pay</h3><p>Congratulations on completing your four weekly submissions! Our team will verify your payment and assess your projects before issuing {orderName(pack)}.</p><p>Allow an estimated six hours from payment submission. Approved documents will be available in this portal and emailed to {email || 'your registered email address'}. Processing can take longer if verification needs follow-up.</p><p>Only one order is allowed. Confirm your selected package before paying. A UTR, Payment ID or screenshot does not automatically verify payment.</p><label className="cloud-consent"><input type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={busy}/><span>I accept these terms, including the estimated six-hour review, payment and project verification, and delivery to my registered email and portal.</span></label></div>
+   {accepted && policyReady && <><p>Pay once through GPay / UPI using the academy QR, then submit your transaction reference for staff review.</p><img className="cloud-qr" src="/assets/payment-qr.png" alt="Academy UPI payment QR"/><PaymentReferenceInput disabled={busy}/><label>Payment screenshot (optional)<input name="file" type="file" accept=".png,.jpg,.jpeg,.pdf" disabled={busy}/></label></>}
    <button disabled={busy || !accepted || !policyReady}>{busy ? 'Submitting…' : 'Submit payment for review'}</button><button type="button" disabled={busy} onClick={() => { setPack(null); setAccepted(false); }}>Cancel</button>
   </form>}
  </section>;

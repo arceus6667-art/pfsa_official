@@ -830,7 +830,7 @@ export function AcademyCloud({
                       {r.data.amount || r.data.package} · {orderName(String(r.data.package))}
                     </b>
                     <p>
-                      {r.data.order_type==='early_start'?'Early Start bundle · ':''}UTR: {r.data.utr} · {r.data.status}
+                      {r.data.order_type==='early_start'?'Early Start bundle · ':''}UTR / Payment ID: {r.data.utr} · {r.data.status}
                     </p>
                     <p>{r.data.address}</p>
                     <p>Estimated completion (after all required submissions): {reviewDue(r,records.filter(s=>s.user_id===r.user_id))?.toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})||'Awaiting all four submissions'} · Terms: {r.data.terms_accepted_at ? 'Accepted ' + r.data.terms_accepted_at : 'Legacy order'}</p>
