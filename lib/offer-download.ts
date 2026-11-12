@@ -6,7 +6,10 @@ export async function renderOfferCanvas(record:CloudRecord){
  if(record.kind!=='document'||record.data.type!=='Offer Letter'||record.data.status!=='published')throw Error('Only a published offer letter can be downloaded.');
  const canvas=document.createElement('canvas');canvas.width=1240;canvas.height=1754;
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('Your browser cannot generate the offer PDF.');
- const [template,stamp]=await Promise.all([loadImage('/assets/documents/offer-template-preview.png'),loadImage(academy.stamp)]);
+ const [template,stamp,founderSignature,coordinatorSignature]=await Promise.all([
+  loadImage('/assets/documents/offer-template-preview.png'),loadImage(academy.stamp),
+  loadImage(academy.founderSignature),loadImage(academy.coordinatorSignature),
+ ]);
  ctx.fillStyle='#fff';ctx.fillRect(0,0,1240,1754);
  // Use the exact approved header artwork, including the logo, icons and MSME mark.
  ctx.drawImage(template,0,0,1054,316,0,0,1240,316*1754/1492);
@@ -24,9 +27,17 @@ export async function renderOfferCanvas(record:CloudRecord){
   }
   if(i<layout.groups.length-1)y+=layout.gap;
  }
- // Blank signature space matches the approved template, with no oversized empty block.
+ // Sign the current rendering of both existing and newly issued records; keep their stored identity and dates.
  const signatureY=Math.max(1515,layout.end+140);
  ctx.drawImage(stamp,495,signatureY-72,200,200);
+ // Crop transparent margins only and fit without stretching the original handwriting.
+ const signature=(image:HTMLImageElement,crop:number[],x:number,width:number)=>{
+  const [sx,sy,sw,sh]=crop;const scale=Math.min(width/sw,110/sh);
+  const w=sw*scale,h=sh*scale;
+  ctx.drawImage(image,sx,sy,sw,sh,x+(width-w)/2,signatureY-12-h,w,h);
+ };
+ signature(founderSignature,[76,112,2022,526],70,345);
+ signature(coordinatorSignature,[33,6,1779,854],755,418);
  ctx.strokeStyle='#10223e';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(70,signatureY);ctx.lineTo(415,signatureY);ctx.moveTo(755,signatureY);ctx.lineTo(1173,signatureY);ctx.stroke();
  ctx.fillStyle='#10223e';ctx.font='bold 26px "Times New Roman", serif';ctx.fillText(academy.founder,70,signatureY+45);ctx.fillText(academy.coordinator,755,signatureY+45);
  ctx.font='italic 25px "Times New Roman", serif';ctx.fillText('Founder',70,signatureY+79);ctx.fillText('Programme Coordinator',755,signatureY+79);
