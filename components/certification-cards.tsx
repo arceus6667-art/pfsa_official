@@ -24,17 +24,17 @@ export function CertificationCards({ records, userId, email, programme, complete
  const download = (doc: CloudRecord) => run(() => doc.data.path ? openFile(String(doc.data.path)) : downloadOffer(doc), 'Download ready.');
  const choose = (value: Pack) => { if (!order && !busy) { setAccepted(false); setPack(value); } };
  const canBuy = completed && !busy && !order && policyReady;
- const due = order ? reviewDue(order) : null;
+ const due = order ? reviewDue(order,records) : null;
  const ready = order ? orderReady(order, docs) : false;
  return <section>
   <h2>Your internship documents</h2>
   {!policyReady && !order && <p role="status">Checkout is awaiting the academy payment protection and pricing update. Please contact Support before paying.</p>}
   {order && <div className="cloud-order-status" role="status">
    <small>YOUR DOCUMENT ORDER · {order.id.slice(0,8).toUpperCase()}</small>
-   <h3>{ready ? 'Your documents are available' : 'Congratulations on submitting your internship work!'}</h3>
+   <h3>{ready ? 'Your documents are available' : order.data.order_type==='early_start'&&!completed?'Early Start payment submitted':'Congratulations on submitting your internship work!'}</h3>
    <p><strong>{orderName(String(order.data.package))}</strong> · ₹{paymentAmount(order)}</p>
-   <p>{ready ? 'Download your published documents below.' : order.data.status === 'follow-up' ? 'Your order needs staff follow-up. Please contact Support; do not pay again.' : 'Your payment and projects are being reviewed by our team. Payment confirmation requires staff verification.'}</p>
-   <p>Estimated processing time: <strong>six hours from your payment submission</strong>{due ? ` (estimated by ${due.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST)` : ''}. This is an estimate, subject to payment and project approval.</p>
+   <p>{ready ? 'Download your published documents below.' : order.data.status === 'follow-up' ? 'Your order needs staff follow-up. Please contact Support; do not pay again.' : order.data.order_type==='early_start'&&!completed?'Your learning access is open. Complete all four weekly tasks. Staff will verify your payment and assess the completed work before issuing documents.':'Your payment and projects are being reviewed by our team. Payment confirmation requires staff verification.'}</p>
+   <p>Estimated processing time: <strong>{order.data.order_type==='early_start'?'six hours after payment details and all four weekly submissions are received':'six hours from your payment submission'}</strong>{due ? ` (estimated by ${due.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST)` : ''}. This is an estimate, subject to payment and project approval.</p>
    {!ready && due && Date.now() > due.getTime() && <p>The estimated processing time has passed. Please contact Support for an update.</p>}
    <p>Your ordered documents will be available in this portal and emailed by our team to <strong>{email || 'your registered email address'}</strong> after approval.</p>
    <p>{order.data.email_delivered_at ? `Staff recorded email delivery on ${new Date(String(order.data.email_delivered_at)).toLocaleString('en-IN')}.` : 'Email delivery: awaiting staff dispatch.'}</p>

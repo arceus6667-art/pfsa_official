@@ -22,6 +22,8 @@ import {profileChanges} from "@/lib/profile-fields";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
+import {StartChoiceScreen} from './start-choice';
+import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
 const studentTabs = [
   "Today",
@@ -77,6 +79,9 @@ export function AcademyCloud({
     [anchor, setAnchor] = useState(new Date()),
     [week, setWeek] = useState(1),
     [search, setSearch] = useState(""), [descriptionText,setDescriptionText]=useState("");
+  const [startChoice,setStartChoice]=useState<StartChoice|null>(null),[startOptions,setStartOptions]=useState<StartOptions|null>(null),[clock,setClock]=useState(Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(timer);},[]);
+  const learningOpen=canSubmitWork(startChoice,clock);
   const isAdmin = user?.app_metadata?.pfsa_role === "admin";
   const me = profiles.find((p) => p.id === user?.id);
   const application = records.find(
@@ -123,6 +128,11 @@ export function AcademyCloud({
       const [p,r]=await Promise.all([cloud.from('pfsa_profiles').select('*').order('name'),cloud.from('pfsa_records').select('*').order('created_at',{ascending:false})]);
       if(p.error||r.error)throw p.error||r.error;
       setProfiles(p.data||[]);setRecords(r.data||[]);
+      if(page==='student'){
+       const [selection,options]=await Promise.all([cloud.from('pfsa_start_selections').select('*').eq('user_id',current.id).maybeSingle(),cloud.rpc('pfsa_start_options')]);
+       if(selection.error||options.error)throw selection.error||options.error;
+       setStartChoice(selection.data);setStartOptions(options.data);
+      }
     }
     setLoading(false);
   };
@@ -546,6 +556,7 @@ export function AcademyCloud({
         <a href="/student">Open student workspace</a>
       </main>
     );
+  if(page==='student'&&!isAdmin&&application&&!startChoice)return <StartChoiceScreen userId={user.id} name={me?.name||'student'} domain={programme?.title||String(application.data.programme)} options={startOptions} onDone={refresh} dark={dark} error={notice}/>;
   const start = new Date(anchor);
   start.setDate(start.getDate() - start.getDay());
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -602,6 +613,7 @@ export function AcademyCloud({
         ))}
       </nav>
       <div className="cloud-main">
+        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · '+untilStart(startChoice.start_at,clock)}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. Task submissions open on your assigned batch date.'}</p></div>}
         <div className="cloud-heading">
           <div>
             <small>
@@ -733,7 +745,7 @@ export function AcademyCloud({
                     <p>
                       {programmes.find((p) => p.id === r.data.programme)?.title}{" "}
                       · {r.data.status}
-                    </p>
+                    </p><p>Start option: {r.data.start_mode||'Not selected yet'}</p>
                   </div>
                   <button
                     disabled={busy}
@@ -818,10 +830,10 @@ export function AcademyCloud({
                       {r.data.amount || r.data.package} · {orderName(String(r.data.package))}
                     </b>
                     <p>
-                      UTR: {r.data.utr} · {r.data.status}
+                      {r.data.order_type==='early_start'?'Early Start bundle · ':''}UTR: {r.data.utr} · {r.data.status}
                     </p>
                     <p>{r.data.address}</p>
-                    <p>Estimated completion: {reviewDue(r)?.toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})} IST · Terms: {r.data.terms_accepted_at ? 'Accepted ' + r.data.terms_accepted_at : 'Legacy order'}</p>
+                    <p>Estimated completion (after all required submissions): {reviewDue(r,records.filter(s=>s.user_id===r.user_id))?.toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})||'Awaiting all four submissions'} · Terms: {r.data.terms_accepted_at ? 'Accepted ' + r.data.terms_accepted_at : 'Legacy order'}</p>
                     <p>Email: {profiles.find(p => p.id === r.user_id)?.email} · {r.data.email_delivered_at ? 'Staff recorded dispatch' : 'Awaiting staff email dispatch'}</p>
                     {orderReady(r, records.filter(d => d.user_id === r.user_id)) && <div className="cloud-controls">
                       <a href={'mailto:' + encodeURIComponent(profiles.find(p => p.id === r.user_id)?.email || '') + '?subject=' + encodeURIComponent('Your PFSA internship documents') + '&body=' + encodeURIComponent('Congratulations on completing your internship! Your ' + orderName(String(r.data.package)) + ' are ready. Please find your documents in the PFSA portal: https://pramaan-forensics-academy.arceus6667.chatgpt.site/student\n\nPFSA Academy Team')}>Prepare document delivery email ↗</a>
@@ -956,7 +968,8 @@ export function AcademyCloud({
         )}
         {!isAdmin && tab === "Schedule" && (
           <section>
-            <div className="cloud-heading">
+            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · '+untilStart(startChoice.start_at,clock)}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. Task submissions open on your assigned batch date.'}</p></div>}
+        <div className="cloud-heading">
               <h2>Weekly Schedule</h2>
               <div className="cloud-controls">
                 <button
@@ -1035,7 +1048,7 @@ export function AcademyCloud({
                 </button>
               ))}
             </div>
-            {activeTask ? (
+            {!learningOpen ? <p role="status">Your Regular Start batch opens on {startChoice?new Date(startChoice.start_at).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'}):'your assigned date'}. {startChoice?untilStart(startChoice.start_at,clock):'Choose your start option first.'}.</p> : activeTask ? (
               <>
                 <h3>{activeTask.data.title}</h3>
                 <p>{activeTask.data.description}</p>

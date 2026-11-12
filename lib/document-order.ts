@@ -6,8 +6,14 @@ export function orderName(pack: string) {
 export function firstOrder(records: CloudRecord[]) {
  return records.filter(r => r.kind === 'payment').sort((a,b) => a.created_at.localeCompare(b.created_at))[0];
 }
-export function reviewDue(order: CloudRecord) {
- const time = Date.parse(order.created_at);
+export function reviewDue(order: CloudRecord, records:CloudRecord[] = []) {
+ let received=order.created_at;
+ if(order.data.order_type==='early_start'){
+  const submissions=records.filter(r=>r.kind==='submission'&&r.data.programme===order.data.programme&&[1,2,3,4].includes(Number(r.data.week)));
+  if(new Set(submissions.map(r=>Number(r.data.week))).size!==4)return null;
+  received=[received,...submissions.map(r=>r.created_at)].sort().at(-1)!;
+ }
+ const time = Date.parse(received);
  return Number.isFinite(time) ? new Date(time + 6 * 60 * 60 * 1000) : null;
 }
 export function orderReady(order: CloudRecord, docs: CloudRecord[]) {
