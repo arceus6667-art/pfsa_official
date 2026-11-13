@@ -87,6 +87,10 @@ export function AcademyCloud({
     [search, setSearch] = useState(""), [descriptionText,setDescriptionText]=useState("");
   const [startChoice,setStartChoice]=useState<StartChoice|null>(null),[startOptions,setStartOptions]=useState<StartOptions|null>(null),[clock,setClock]=useState(Date.now());
   const [candidatePage,setCandidatePage]=useState(1);
+  const [assessmentTab,setAssessmentTab]=useState<'pending'|'completed'>('pending');
+  const allSubmissions=records.filter(r=>r.kind==='submission');
+  const reviewedSubmissions=allSubmissions.filter(r=>r.data.status==='reviewed');
+  const pendingSubmissions=allSubmissions.filter(r=>r.data.status!=='reviewed');
   const matchingCandidates=profiles.filter(p=>(p.name+' '+p.email+' '+p.id).toLowerCase().includes(search.toLowerCase()));
   const candidatePages=Math.max(1,Math.ceil(matchingCandidates.length/10)),visibleCandidatePage=Math.min(candidatePage,candidatePages);
   const visibleCandidates=matchingCandidates.slice((visibleCandidatePage-1)*10,visibleCandidatePage*10);
@@ -781,8 +785,13 @@ export function AcademyCloud({
         {isAdmin && tab === "Submissions" && (
           <section>
             <h2>Project assessment</h2>
-            {records
-              .filter((r) => r.kind === "submission")
+            <p>Review weekly project work and save marks and feedback. Saved assessments move to Completed and appear in the student's Tasks section.</p>
+            <div className="assessment-status-tabs" role="group" aria-label="Submission review status">
+              <button aria-pressed={assessmentTab==='pending'} className={assessmentTab==='pending'?'active':''} onClick={()=>setAssessmentTab('pending')}>Yet for Review <span>{pendingSubmissions.length}</span></button>
+              <button aria-pressed={assessmentTab==='completed'} className={assessmentTab==='completed'?'active':''} onClick={()=>setAssessmentTab('completed')}>Completed <span>{reviewedSubmissions.length}</span></button>
+            </div>
+            <h3>{assessmentTab==='pending'?'Yet for Review':'Completed'}</h3>
+            {(assessmentTab==='pending'?pendingSubmissions:reviewedSubmissions)
               .map((r) => (
                 <form
                   className="cloud-assessment"
@@ -790,19 +799,19 @@ export function AcademyCloud({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const form = e.currentTarget;
-                    run(() =>
-                      update(r, {
-                        marks: Number(field(form, "marks")),
-                        feedback: field(form, "feedback"),
-                        status: "reviewed",
-                      }),
-                    );
+                    void run(async()=>{
+                      const marks=Number(field(form,'marks'));
+                      if(!Number.isFinite(marks)||marks<0||marks>100)throw new Error('Enter marks between 0 and 100.');
+                      const {error}=await cloud.from('pfsa_records').update({data:{...r.data,marks,feedback:field(form,'feedback'),status:'reviewed'}}).eq('id',r.id).eq('kind','submission').select('id').single();
+                      if(error)throw error;
+                    },'Assessment saved. The student can now see their marks and feedback.');
                   }}
                 >
                   <h3>
-                    {profiles.find((p) => p.id === r.user_id)?.name} · Week{" "}
+                    {profiles.find((p) => p.id === r.user_id)?.name||'Student'} · Week{" "}
                     {r.data.week}
                   </h3>
+                  <p className="assessment-context">{programmes.find(p=>p.id===r.data.programme)?.title||r.data.programme} · {profiles.find(p=>p.id===r.user_id)?.email}</p>
                   {renderFile(r)}
                   <p className="cloud-description">{r.data.description}</p>
                   <label>
@@ -820,11 +829,11 @@ export function AcademyCloud({
                     Feedback
                     <textarea name="feedback" defaultValue={r.data.feedback} />
                   </label>
-                  <button disabled={busy}>Save assessment</button>
+                  <button disabled={busy}>{busy?'Saving…':r.data.status==='reviewed'?'Update assessment':'Save assessment'}</button>
                 </form>
               ))}
-            {!records.some((r) => r.kind === "submission") && (
-              <p>No projects have been submitted.</p>
+            {!(assessmentTab==='pending'?pendingSubmissions:reviewedSubmissions).length && (
+              <p className="assessment-empty" role="status">{assessmentTab==='pending'?'No submissions are waiting for review.':'No completed assessments yet. Save an assessment in Yet for Review to see it here.'}</p>
             )}
           </section>
         )}
@@ -1028,7 +1037,7 @@ export function AcademyCloud({
                       }
                     </p>
                     <p>
-                      Marks:{" "}
+                      Marks / 100:{" "}
                       {submissions.find((r) => Number(r.data.week) === week)
                         ?.data.marks ?? "Awaiting review"}
                     </p>
