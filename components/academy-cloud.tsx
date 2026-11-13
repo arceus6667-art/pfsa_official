@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
+import {LogOut} from 'lucide-react';
 import type { User } from "@supabase/supabase-js";
 import {
   cloud,
@@ -584,7 +585,7 @@ export function AcademyCloud({
           <img src="/assets/pfsa-logo.jpeg" alt="Pramaan Forensics Academy" />
           <b>{isAdmin ? "Academy administration" : "Student Workspace"}</b>
         </a>
-        <div>
+        <div className={!isAdmin?'student-workspace-actions':undefined}>
           {!isAdmin&&<NotificationBell state={notificationState} onTasks={()=>setTab("Tasks")}/>}
           <button
             aria-label="Change colour theme"
@@ -595,10 +596,14 @@ export function AcademyCloud({
           >
             {dark ? "☀" : "☾"}
           </button>
-          <button title={me?.name || user.email} onClick={() => setTab(isAdmin ? "Candidates" : "Profile")}>
-            {me?.name || user.email}
+          <button className={!isAdmin?'student-profile-control':undefined} aria-label={'Open profile: '+(me?.name || user.email)} title={me?.name || user.email} onClick={() => setTab(isAdmin ? "Candidates" : "Profile")}>
+            <span className="student-profile-full">{me?.name || user.email}</span>
+            {!isAdmin&&<span className="student-profile-mobile"><span className="student-profile-initial" aria-hidden="true">{(me?.name||user.email||'S').trim().charAt(0).toUpperCase()}</span><span>{(me?.name||user.email||'Profile').trim().split(/\s+/)[0]}</span></span>}
           </button>
           <button
+            className={!isAdmin?'student-signout-control':undefined}
+            aria-label="Sign out"
+            title="Sign out"
             onClick={() =>
               run(async () => {
                 await cloud.auth.signOut();
@@ -606,7 +611,7 @@ export function AcademyCloud({
               })
             }
           >
-            Sign out
+            <span className="student-signout-text">Sign out</span><LogOut className="student-signout-icon" size={19} aria-hidden="true"/>
           </button>
         </div>
       </header>
@@ -625,7 +630,7 @@ export function AcademyCloud({
         ))}
       </nav>
       <div className="cloud-main">
-        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
+        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className={"cloud-order-status cloud-start-banner "+(tab!=="Today"?"cloud-mobile-start-hidden":"")}><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
           <div>
             <small>
@@ -927,7 +932,7 @@ export function AcademyCloud({
         )}
         {!isAdmin && tab === "Schedule" && (
           <section>
-            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
+            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-mobile-start-hidden"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
               <h2>Weekly Schedule</h2>
               <div className="cloud-controls">
