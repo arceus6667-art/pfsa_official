@@ -23,6 +23,7 @@ import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
 import {staffLoginEmail} from '@/lib/staff-login';
+import {SupportSender} from './support-sender';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
@@ -896,6 +897,7 @@ export function AcademyCloud({
               .map((r) => (
                 <article key={r.id} className="cloud-row">
                   <div>
+                    {isAdmin && <SupportSender profile={profiles.find(p=>p.id===r.user_id)} userId={r.user_id}/>}
                     <h3>{r.data.subject}</h3>
                     <p>{r.data.message}</p>
                     <small>{r.data.status}</small>
