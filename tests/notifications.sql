@@ -1,0 +1,38 @@
+begin;
+do $test$
+declare student uuid;staff uuid;other uuid;notice uuid;first_notice uuid;second_notice uuid;original_start timestamptz;denied boolean:=false;
+begin
+ select id into staff from auth.users where raw_app_meta_data->>'pfsa_role'='admin' limit 1;
+ select s.user_id,s.start_at into student,original_start from public.pfsa_start_selections s join public.pfsa_records a on a.user_id=s.user_id and a.kind='application' and a.data->>'status'='approved' and a.data->>'programme'=s.programme limit 1;
+ select id into other from auth.users where id<>student and id<>staff limit 1;
+ if student is null then raise exception 'Student fixture missing';end if;
+ perform set_config('request.jwt.claims',json_build_object('sub',staff,'role','authenticated','app_metadata',json_build_object('pfsa_role','admin'))::text,true);
+ set local role authenticated;
+ insert into public.pfsa_notifications(title,body,audience,target_user) values('QA targeted notice','Rollback only','student',other) returning id into notice;
+ reset role;
+ perform set_config('request.jwt.claims',json_build_object('sub',student,'role','authenticated','app_metadata','{}'::json)::text,true);
+ set local role authenticated;
+ if exists(select 1 from public.pfsa_notifications where id=notice) then raise exception 'Target isolation failed';end if;
+ begin insert into public.pfsa_notifications(title,body) values('Forbidden','Forbidden');exception when insufficient_privilege then denied:=true;end;
+ if not denied then raise exception 'Student publish guard failed';end if;
+ reset role;
+ update public.pfsa_start_selections set start_at=now()+interval '7 days',mode='regular',legacy_access=false,payment_id=null where user_id=student;
+ set local role authenticated;
+ if public.pfsa_ensure_programme_notice() is not null then raise exception 'Premature notice';end if;
+ reset role;
+ update public.pfsa_start_selections set start_at=now()-interval '1 day' where user_id=student;
+ set local role authenticated;
+ first_notice:=public.pfsa_ensure_programme_notice();second_notice:=public.pfsa_ensure_programme_notice();
+ if first_notice is null or first_notice<>second_notice then raise exception 'Deduplication failed';end if;
+ perform public.pfsa_notification_action(first_notice,true);
+ if not exists(select 1 from public.pfsa_notification_receipts where notification_id=first_notice and read_at is not null and dismissed_at is not null) then raise exception 'Receipt failed';end if;
+ reset role;
+ update public.pfsa_start_selections set start_at=now()+interval '7 days',legacy_access=true where user_id=student;
+ set local role authenticated;
+ second_notice:=public.pfsa_ensure_programme_notice();
+ if not exists(select 1 from public.pfsa_notifications where id=second_notice and start_stage='early') then raise exception 'Early notice failed';end if;
+ if exists(select 1 from public.pfsa_notifications where id=first_notice) then raise exception 'Stale official notice visible';end if;
+ reset role;
+end $test$;
+rollback;
+select 'PASS: audience isolation, student publish denial, future-start guard, deduplication, receipts, early-access wording and stale-notice filtering' result;

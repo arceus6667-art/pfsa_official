@@ -25,6 +25,7 @@ import {downloadOffer} from '@/lib/offer-download';
 import {staffLoginEmail} from '@/lib/staff-login';
 import {SupportPanel,useSupportConversations} from './support-conversations';
 import {AdminDomainAssignment} from './admin-domain-assignment';
+import {NotificationBell,AdminNotifications,useNotifications} from './notification-center';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
@@ -49,6 +50,7 @@ const adminTabs = [
   "Submissions",
   "Documents",
   "Payments",
+  "Notifications",
   "Support",
 ];
 const fmt = (date: Date) =>
@@ -91,6 +93,7 @@ export function AcademyCloud({
   const learningOpen=canSubmitWork(startChoice,clock);
   const isAdmin = user?.app_metadata?.pfsa_role === "admin";
   const supportState=useSupportConversations(user?.id,isAdmin);
+  const notificationState=useNotifications(page==="student"||page==="admin"?user?.id:undefined,isAdmin);
   const me = profiles.find((p) => p.id === user?.id);
   const application = records.find(
     (r) => r.kind === "application" && r.user_id === user?.id,
@@ -582,6 +585,7 @@ export function AcademyCloud({
           <b>{isAdmin ? "Academy administration" : "Student Workspace"}</b>
         </a>
         <div>
+          {!isAdmin&&<NotificationBell state={notificationState} onTasks={()=>setTab("Tasks")}/>}
           <button
             aria-label="Change colour theme"
             onClick={() => {
@@ -865,6 +869,7 @@ export function AcademyCloud({
               ))}
           </section>
         )}
+        {isAdmin&&tab==="Notifications"&&<AdminNotifications state={notificationState} profiles={profiles} userId={user.id}/>}
         {tab === "Support" && <SupportPanel records={records} profiles={profiles} userId={user.id} isAdmin={isAdmin} busy={busy} run={run} state={supportState}/>}
         {!isAdmin && tab === "Profile" && (
           <section>
