@@ -1,0 +1,12 @@
+import ts from 'typescript';import fs from 'node:fs';import assert from 'node:assert/strict';
+const source=ts.transpileModule(fs.readFileSync('lib/support-thread.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+const {unreadSupport}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const replies=[{id:'a',ticket_id:'ticket',author_id:'staff',author_role:'admin',created_at:'2026-11-13T10:00:00Z'},{id:'b',ticket_id:'ticket',author_id:'student',author_role:'student',created_at:'2026-11-13T10:01:00Z'},{id:'c',ticket_id:'ticket',author_id:'staff',author_role:'admin',created_at:'2026-11-13T10:02:00Z'}];
+assert.equal(unreadSupport(replies,[],'student',false).length,2);
+assert.equal(unreadSupport(replies,[],'staff',true).length,1);
+const receipts=[{ticket_id:'ticket',user_id:'student',last_read_at:'2026-11-13T10:00:00Z'}];
+assert.equal(unreadSupport(replies,receipts,'student',false).length,1);
+assert.equal(unreadSupport(replies,receipts,'staff',true).length,1);
+assert.equal(unreadSupport(replies,[{...receipts[0],last_read_at:'2026-11-13T10:02:00Z'}],'student',false).length,0);
+assert.equal(unreadSupport(replies,[{...receipts[0],ticket_id:'other'}],'student',false).length,2);
+console.log('6 unread notification checks passed: role, ownership, read boundary and ticket isolation.');

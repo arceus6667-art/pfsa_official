@@ -23,7 +23,7 @@ import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
 import {staffLoginEmail} from '@/lib/staff-login';
-import {SupportSender} from './support-sender';
+import {SupportPanel,useSupportConversations} from './support-conversations';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
@@ -85,6 +85,7 @@ export function AcademyCloud({
   useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(timer);},[]);
   const learningOpen=canSubmitWork(startChoice,clock);
   const isAdmin = user?.app_metadata?.pfsa_role === "admin";
+  const supportState=useSupportConversations(user?.id,isAdmin);
   const me = profiles.find((p) => p.id === user?.id);
   const application = records.find(
     (r) => r.kind === "application" && r.user_id === user?.id,
@@ -610,7 +611,7 @@ export function AcademyCloud({
               setNotice("");
             }}
           >
-            {t}
+            {t}{t==='Support'&&supportState.unread.length>0&&<span className="support-nav-badge" aria-label={supportState.unread.length+' unread support replies'}>{supportState.unread.length}</span>}
           </button>
         ))}
       </nav>
@@ -861,60 +862,7 @@ export function AcademyCloud({
               ))}
           </section>
         )}
-        {tab === "Support" && (
-          <section>
-            <h2>{isAdmin ? "Support inbox" : "Contact academy staff"}</h2>
-            {!isAdmin && (
-              <form
-                className="cloud-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget;
-                  run(
-                    () =>
-                      addRecord("support", user.id, {
-                        subject: field(form, "subject"),
-                        message: field(form, "message"),
-                        status: "open",
-                      }),
-                    "Support request sent.",
-                  );
-                }}
-              >
-                <label>
-                  Subject
-                  <input name="subject" required />
-                </label>
-                <label>
-                  Message
-                  <textarea name="message" required />
-                </label>
-                <button disabled={busy}>Send request</button>
-              </form>
-            )}
-            {records
-              .filter((r) => r.kind === "support")
-              .map((r) => (
-                <article key={r.id} className="cloud-row">
-                  <div>
-                    {isAdmin && <SupportSender profile={profiles.find(p=>p.id===r.user_id)} userId={r.user_id}/>}
-                    <h3>{r.data.subject}</h3>
-                    <p>{r.data.message}</p>
-                    <small>{r.data.status}</small>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      onClick={() =>
-                        run(() => update(r, { status: "resolved" }))
-                      }
-                    >
-                      Resolve
-                    </button>
-                  )}
-                </article>
-              ))}
-          </section>
-        )}
+        {tab === "Support" && <SupportPanel records={records} profiles={profiles} userId={user.id} isAdmin={isAdmin} busy={busy} run={run} state={supportState}/>}
         {!isAdmin && tab === "Profile" && (
           <section>
             {me ? (
