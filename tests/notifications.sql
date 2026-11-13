@@ -18,7 +18,8 @@ begin
  reset role;
  update public.pfsa_start_selections set start_at=now()+interval '7 days',mode='regular',legacy_access=false,payment_id=null where user_id=student;
  set local role authenticated;
- if public.pfsa_ensure_programme_notice() is not null then raise exception 'Premature notice';end if;
+ first_notice:=public.pfsa_ensure_programme_notice();
+ if not exists(select 1 from public.pfsa_notifications where id=first_notice and start_stage='early') then raise exception 'Regular access notice missing';end if;
  reset role;
  update public.pfsa_start_selections set start_at=now()-interval '1 day' where user_id=student;
  set local role authenticated;
@@ -35,4 +36,4 @@ begin
  reset role;
 end $test$;
 rollback;
-select 'PASS: audience isolation, student publish denial, future-start guard, deduplication, receipts, early-access wording and stale-notice filtering' result;
+select 'PASS: audience isolation, student publish denial, regular immediate-access notice, deduplication, receipts, early-access wording and stale-notice filtering' result;

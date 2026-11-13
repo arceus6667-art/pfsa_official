@@ -31,7 +31,7 @@ create policy pfsa_notification_read on public.pfsa_notifications for select to 
   (category='programme_start' and target_user=(select auth.uid()) and exists(
    select 1 from public.pfsa_start_selections s join public.pfsa_records a on a.kind='application' and a.user_id=s.user_id and a.data->>'programme'=s.programme and a.data->>'status'='approved'
    where s.user_id=(select auth.uid()) and s.programme=target_programme and s.start_at=programme_start_at and
-   ((start_stage='official' and s.start_at<=now()) or (start_stage='early' and s.start_at>now() and (s.legacy_access or (s.mode='early' and s.payment_id is not null))))
+   ((start_stage='official' and s.start_at<=now()) or (start_stage='early' and s.start_at>now() and (s.mode='regular' or s.legacy_access or (s.mode='early' and s.payment_id is not null))))
   ))
  ))
 );
@@ -66,7 +66,7 @@ begin
  if s.start_at<=now() then
   stage:='official';heading:='Your programme has officially started';
   message:='Your programme has officially started. You can now submit your weekly tasks from the Tasks section. Please read the task briefs carefully and submit your project work with the required description. Follow the deadlines in your Schedule, and contact Support if you need assistance. Welcome aboard!';
- elsif s.legacy_access or (s.mode='early' and s.payment_id is not null) then
+ elsif s.mode='regular' or s.legacy_access or (s.mode='early' and s.payment_id is not null) then
   stage:='early';heading:='Your learning access is open';
   message:='Your internship workspace is open, and you can submit your weekly tasks now. Read the task briefs in Tasks, use your domain resources, and contact Support if you need assistance. Your regular batch start date remains unchanged.';
  else return null;end if;

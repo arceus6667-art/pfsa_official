@@ -27,7 +27,7 @@ import {SupportPanel,useSupportConversations} from './support-conversations';
 import {AdminDomainAssignment} from './admin-domain-assignment';
 import {NotificationBell,AdminNotifications,useNotifications} from './notification-center';
 import {StartChoiceScreen} from './start-choice';
-import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
+import {canSubmitWork,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
 const studentTabs = [
   "Today",
@@ -625,7 +625,7 @@ export function AcademyCloud({
         ))}
       </nav>
       <div className="cloud-main">
-        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · '+untilStart(startChoice.start_at,clock)}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. Task submissions open on your assigned batch date.'}</p></div>}
+        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
           <div>
             <small>
@@ -927,7 +927,7 @@ export function AcademyCloud({
         )}
         {!isAdmin && tab === "Schedule" && (
           <section>
-            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · '+untilStart(startChoice.start_at,clock)}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. Task submissions open on your assigned batch date.'}</p></div>}
+            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
               <h2>Weekly Schedule</h2>
               <div className="cloud-controls">
@@ -1007,7 +1007,7 @@ export function AcademyCloud({
                 </button>
               ))}
             </div>
-            {!learningOpen ? <p role="status">Your Regular Start batch opens on {startChoice?new Date(startChoice.start_at).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'}):'your assigned date'}. {startChoice?untilStart(startChoice.start_at,clock):'Choose your start option first.'}.</p> : activeTask ? (
+            {!learningOpen ? <p role="status">{startChoice?'Complete your Early Start payment submission or contact Support to open learning access.':'Choose your start option first.'}</p> : activeTask ? (
               <>
                 <h3>{activeTask.data.title}</h3>
                 <p>{activeTask.data.description}</p>
