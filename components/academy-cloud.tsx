@@ -22,6 +22,7 @@ import {profileChanges} from "@/lib/profile-fields";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
+import {staffLoginEmail} from '@/lib/staff-login';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
@@ -201,7 +202,7 @@ export function AcademyCloud({
     const form = e.currentTarget;
     await run(
       async () => {
-        const email = field(form, "email"),
+        const email = page==='admin-login'?staffLoginEmail(field(form,'email')):field(form, "email"),
           password = field(form, "password");
         if (page === "register") {
           const { data, error } = await cloud.auth.signUp({
