@@ -24,6 +24,7 @@ import {rememberProgramme,completePendingApplication,countWords} from "@/lib/app
 import {downloadOffer} from '@/lib/offer-download';
 import {staffLoginEmail} from '@/lib/staff-login';
 import {SupportPanel,useSupportConversations} from './support-conversations';
+import {AdminDomainAssignment} from './admin-domain-assignment';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,untilStart,type StartChoice,type StartOptions} from '@/lib/start-choice';
 
@@ -82,6 +83,10 @@ export function AcademyCloud({
     [week, setWeek] = useState(1),
     [search, setSearch] = useState(""), [descriptionText,setDescriptionText]=useState("");
   const [startChoice,setStartChoice]=useState<StartChoice|null>(null),[startOptions,setStartOptions]=useState<StartOptions|null>(null),[clock,setClock]=useState(Date.now());
+  const [candidatePage,setCandidatePage]=useState(1);
+  const matchingCandidates=profiles.filter(p=>(p.name+' '+p.email+' '+p.id).toLowerCase().includes(search.toLowerCase()));
+  const candidatePages=Math.max(1,Math.ceil(matchingCandidates.length/10)),visibleCandidatePage=Math.min(candidatePage,candidatePages);
+  const visibleCandidates=matchingCandidates.slice((visibleCandidatePage-1)*10,visibleCandidatePage*10);
   useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(timer);},[]);
   const learningOpen=canSubmitWork(startChoice,clock);
   const isAdmin = user?.app_metadata?.pfsa_role === "admin";
@@ -643,15 +648,13 @@ export function AcademyCloud({
           <section>
             <h2>Candidate directory</h2>
             <input
-              placeholder="Search name or email"
+              placeholder="Search name, email or student ID"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {setSearch(e.target.value);setCandidatePage(1);}}
             />
-            {profiles
-              .filter((p) =>
-                (p.name + p.email).toLowerCase().includes(search.toLowerCase()),
-              )
-              .map(profileForm)}
+            <div className="cloud-controls admin-candidate-pages"><p>{matchingCandidates.length?`Showing ${(visibleCandidatePage-1)*10+1}–${Math.min(visibleCandidatePage*10,matchingCandidates.length)} of ${matchingCandidates.length} candidates`:'No candidates match your search.'}</p><button type="button" disabled={visibleCandidatePage===1} onClick={()=>setCandidatePage(visibleCandidatePage-1)}>Previous candidates</button><span>Page {visibleCandidatePage} of {candidatePages}</span><button type="button" disabled={visibleCandidatePage===candidatePages} onClick={()=>setCandidatePage(visibleCandidatePage+1)}>Next candidates</button></div>
+            {visibleCandidates
+              .map(p=><article className="admin-candidate-record" key={p.id}>{profileForm(p)}<AdminDomainAssignment profile={p} application={records.find(r=>r.kind==='application'&&r.user_id===p.id)} busy={busy} onSaved={refresh}/></article>)}
             {!profiles.length && <p>No registered candidates yet.</p>}
           </section>
         )}

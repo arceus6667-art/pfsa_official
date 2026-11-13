@@ -1,0 +1,37 @@
+begin;
+do $$
+declare candidate_id uuid;admin_id uuid;application_id uuid;previous text;next_domain text;batch_before text;date_before date;start_before jsonb;payments_before jsonb;submissions_before jsonb;offer_before jsonb;result jsonb;n integer;
+begin
+ select a.user_id,a.id,a.data->>'programme' into candidate_id,application_id,previous from public.pfsa_records a join public.pfsa_profiles p on p.id=a.user_id where a.kind='application' and p.name_confirmed_at is not null and exists(select 1 from public.pfsa_records where kind='payment' and user_id=a.user_id) limit 1;
+ if candidate_id is null then raise exception 'No enrolled test candidate found';end if;
+ next_domain:=case when previous='mobile' then 'cloud' else 'mobile' end;
+ select id into admin_id from auth.users where raw_app_meta_data->>'pfsa_role'='admin' limit 1;
+ select cohort,start_date into batch_before,date_before from public.pfsa_profiles where id=candidate_id;
+ select to_jsonb(s)-'programme' into start_before from public.pfsa_start_selections s where user_id=candidate_id;
+ select coalesce(jsonb_agg(jsonb_build_object('id',id,'status',data->>'status','amount',data->>'amount','utr',data->>'utr') order by id),'[]'::jsonb) into payments_before from public.pfsa_records where kind='payment' and user_id=candidate_id;
+ select coalesce(jsonb_agg(to_jsonb(r) order by id),'[]'::jsonb) into submissions_before from public.pfsa_records r where kind='submission' and user_id=candidate_id;
+ select coalesce(jsonb_agg(jsonb_build_object('id',id,'number',data->>'number','created_at',created_at) order by id),'[]'::jsonb) into offer_before from public.pfsa_records where kind='document' and user_id=candidate_id and data->>'type'='Offer Letter' and data->>'status'='published';
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',candidate_id,'role','authenticated','app_metadata','{}'::jsonb)::text,true);execute 'set local role authenticated';
+ begin perform public.pfsa_admin_change_domain(candidate_id,next_domain,previous,'Student attempt');raise exception 'Student changed domain';exception when insufficient_privilege then null;end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',admin_id,'role','authenticated','app_metadata',jsonb_build_object('pfsa_role','admin'))::text,true);
+ begin perform public.pfsa_admin_change_domain(candidate_id,'invalid',previous,'Invalid domain');raise exception 'Invalid domain accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.pfsa_admin_change_domain(candidate_id,next_domain,'wrong-current-domain','Stale editor');raise exception 'Stale editor accepted';exception when serialization_failure then null;end;
+ result:=public.pfsa_admin_change_domain(candidate_id,next_domain,previous,'Rollback-only domain correction test');
+ if result->>'changed'<>'true' then raise exception 'Staff change failed';end if;
+ if not exists(select 1 from public.pfsa_records where id=application_id and data->>'programme'=next_domain) then raise exception 'Application not updated';end if;
+ if exists(select 1 from public.pfsa_start_selections where user_id=candidate_id and programme<>next_domain) then raise exception 'Start selection not transferred';end if;
+ if start_before is distinct from (select to_jsonb(s)-'programme' from public.pfsa_start_selections s where user_id=candidate_id) then raise exception 'Start terms or access changed';end if;
+ if not exists(select 1 from public.pfsa_profiles where id=candidate_id and cohort is not distinct from batch_before and start_date is not distinct from date_before) then raise exception 'Batch assignment changed';end if;
+ if payments_before is distinct from (select coalesce(jsonb_agg(jsonb_build_object('id',id,'status',data->>'status','amount',data->>'amount','utr',data->>'utr') order by id),'[]'::jsonb) from public.pfsa_records where kind='payment' and user_id=candidate_id) then raise exception 'Payment evidence changed';end if;
+ if exists(select 1 from public.pfsa_records where kind='payment' and user_id=candidate_id and data->>'programme'=previous) then raise exception 'Payment entitlement not transferred';end if;
+ if submissions_before is distinct from (select coalesce(jsonb_agg(to_jsonb(r) order by id),'[]'::jsonb) from public.pfsa_records r where kind='submission' and user_id=candidate_id) then raise exception 'Historical submissions changed';end if;
+ if offer_before is distinct from (select coalesce(jsonb_agg(jsonb_build_object('id',id,'number',data->>'number','created_at',created_at) order by id),'[]'::jsonb) from public.pfsa_records where kind='document' and user_id=candidate_id and data->>'type'='Offer Letter' and data->>'status'='published') then raise exception 'Offer identity changed';end if;
+ if exists(select 1 from public.pfsa_records where kind='document' and user_id=candidate_id and data->>'type'='Offer Letter' and data->>'status'='published' and data->>'programme'<>next_domain) then raise exception 'Offer domain not updated';end if;
+ select count(*) into n from public.pfsa_domain_changes where user_id=candidate_id and reason='Rollback-only domain correction test';if n<>1 then raise exception 'Audit record missing';end if;
+ result:=public.pfsa_admin_change_domain(candidate_id,next_domain,previous,'Repeat request');if result->>'changed'<>'false' then raise exception 'Repeated change is not idempotent';end if;
+ select count(*) into n from public.pfsa_records where user_id=candidate_id and kind='application';if n<>1 then raise exception 'Duplicate enrolment created';end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',candidate_id,'role','authenticated','app_metadata','{}'::jsonb)::text,true);
+ select count(*) into n from public.pfsa_domain_changes where user_id=candidate_id;if n<>0 then raise exception 'Student can read staff audit';end if;
+ execute 'reset role';
+end $$;
+rollback;
