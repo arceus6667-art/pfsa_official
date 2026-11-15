@@ -13,7 +13,8 @@ export function StartChoiceScreen({userId,name,domain,options,onDone,dark=false,
  const choose=(value:'early'|'regular')=>{if(!busy){setMode(value);setAccepted(false);setNotice('');}};
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(lock.current||!accepted||!mode||!options)return;
-  lock.current=true;setBusy(true);setNotice('');const data=new FormData(e.currentTarget);
+  const data=new FormData(e.currentTarget);
+  lock.current=true;setBusy(true);setNotice('');
   try{
    if(mode==='early'&&!validPaymentReference(String(data.get('utr')||'')))throw Error(PAYMENT_REFERENCE_ERROR);
    const file=data.get('screenshot') as File|null;

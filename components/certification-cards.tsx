@@ -51,13 +51,13 @@ export function CertificationCards({ records, userId, email, programme, complete
   {pack && completed && !order && <form className="cloud-form" onSubmit={e => {
    e.preventDefault();
    if (!accepted || submitting.current || busy || order) return;
-   const form = e.currentTarget;
+   // Snapshot enabled controls before run() disables them during async checks.
+   const data = new FormData(e.currentTarget), file = data.get('file') as File;
    submitting.current = true;
    void run(async () => {
     const [policy, pricing] = await Promise.all([cloud.rpc('pfsa_order_policy_version'), cloud.rpc('pfsa_pricing_version')]);
     if (pricing.error || pricing.data !== PRICING_VERSION) throw new Error('Document pricing is being updated. Refresh the portal before paying.');
     if (policy.error || policy.data !== 'one-payment-v1') throw new Error('Checkout is awaiting the academy database update. Please contact Support before paying.');
-    const data = new FormData(form), file = data.get('file') as File;
     if(!validPaymentReference(String(data.get('utr')||'')))throw Error(PAYMENT_REFERENCE_ERROR);
     const path = file?.size ? await uploadFile(file, userId) : '';
     const result = await addRecord('payment', userId, { programme: programme || '', package: pack, amount: documentPrice(pack), price_version: PRICING_VERSION, utr: String(data.get('utr') || '').trim(), path, status: 'pending', terms_accepted: 1, terms_version: 'PFSA-DOCUMENTS-2026-11-12' });
