@@ -637,7 +637,8 @@ export function AcademyCloud({
       </nav>
       {!isAdmin&&<CompletionCelebration userId={user.id} programme={programme?.id} completed={completed} prepaid={own.some(r=>r.kind==='payment')} onCertification={()=>setTab('Certification')}/>}
       <div className="cloud-main">
-        {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className={"cloud-order-status cloud-start-banner "+(tab!=="Today"?"cloud-mobile-start-hidden":"")}><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
+        {!isAdmin&&tab==="Today"&&!application&&<aside className="student-program-prompt" aria-labelledby="student-program-prompt-title"><div><small>YOUR NEXT STEP</small><h2 id="student-program-prompt-title">Kindly select your Program</h2><p>Choose your internship domain to receive your offer letter and access your weekly tasks, schedule and learning resources.</p></div><a href="/internships">Select your Program →</a></aside>}
+        {!isAdmin&&tab==="Today"&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-start-banner"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
           <div>
             <small>
@@ -945,7 +946,6 @@ export function AcademyCloud({
         {!isAdmin && tab === "Schedule" && <div className="student-mobile-schedule"><StudentMonthCalendar tasks={tasks} onTask={w=>{setDescriptionText("");setWeek(w);setTab("Tasks");}}/></div>}
         {!isAdmin && tab === "Schedule" && (
           <section className="student-desktop-schedule">
-            {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-mobile-start-hidden"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
               <h2>Weekly Schedule</h2>
               <div className="cloud-controls">
