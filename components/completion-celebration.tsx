@@ -1,0 +1,11 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';
+export function CompletionCelebration({userId,programme,completed,prepaid,onCertification}:{userId:string;programme?:string;completed:boolean;prepaid:boolean;onCertification:()=>void}){
+ const [open,setOpen]=useState(false);const closeButton=useRef<HTMLButtonElement>(null),previous=useRef<HTMLElement|null>(null);
+ const key=`pfsa-completion:${userId}:${programme}`;
+ useEffect(()=>{if(completed&&programme&&!localStorage.getItem(key))setOpen(true);},[completed,programme,key]);
+ function close(){localStorage.setItem(key,'seen');setOpen(false);previous.current?.focus();}
+ useEffect(()=>{if(!open)return;previous.current=document.activeElement as HTMLElement;closeButton.current?.focus();const listener=(e:KeyboardEvent)=>{if(e.key==='Escape'){localStorage.setItem(key,'seen');setOpen(false);previous.current?.focus();}if(e.key==='Tab'){const buttons=[...document.querySelectorAll<HTMLButtonElement>('.completion-dialog button')];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1)?.focus();}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0]?.focus();}}};document.addEventListener('keydown',listener);return()=>document.removeEventListener('keydown',listener);},[open,key]);
+ if(!open)return null;
+ return <div className="completion-overlay"><div className="completion-dialog" role="dialog" aria-modal="true" aria-labelledby="completion-title"><button ref={closeButton} className="completion-close" aria-label="Close celebration" onClick={close}>×</button><div className="completion-confetti" aria-hidden="true">✦ ✧ ✦</div><small>FOUR WEEKS · ALL SUBMITTED</small><h2 id="completion-title">Congratulations!</h2><p>You have submitted all four weekly projects. Thank you for your dedication to your learning journey.</p><p>{prepaid?'Your document order is already recorded—no second payment is needed. Your ordered documents will be issued automatically once all eligibility checks and payment verification are complete.':'For a verified Certificate of Experience and Letter of Recommendation, proceed to Certification to choose your package and submit payment for review.'}</p><button onClick={()=>{close();onCertification();}}>Go for certification →</button></div></div>;
+}

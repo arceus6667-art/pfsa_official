@@ -249,10 +249,6 @@ export const repo = {
   ) {
     const user = this.requireStudent();
     if (!fileName) throw new Error("Choose a submission file first.");
-    if (description.trim().split(/\s+/).filter(Boolean).length < 200)
-      throw new Error(
-        "Your weekly description must contain at least 200 words.",
-      );
     const state = this.read();
     const record: Submission = {
       id: uid("submission"),

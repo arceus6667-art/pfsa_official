@@ -227,7 +227,7 @@ function Submissions({
     <section className="admin-card">
       <h2>Submitted projects & marking</h2>
       <p>
-        Review the submitted file name and 200-word description, then record
+        Review the submitted file name and project description, then record
         marks and feedback.
       </p>
       <div className="admin-list">

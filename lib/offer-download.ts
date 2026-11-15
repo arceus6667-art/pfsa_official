@@ -1,6 +1,7 @@
 import type {CloudRecord} from './pfsa-cloud';
 import {academy} from './academy-config';
 import {offerBodyLayout,offerParagraphs,offerDate} from './offer-layout';
+import {renderCompletionCanvas} from './completion-download';
 async function loadImage(src:string){const image=new Image();image.src=src;await image.decode();return image;}
 export async function renderOfferCanvas(record:CloudRecord){
  if(record.kind!=='document'||record.data.type!=='Offer Letter'||record.data.status!=='published')throw Error('Only a published offer letter can be downloaded.');
@@ -45,7 +46,7 @@ export async function renderOfferCanvas(record:CloudRecord){
  return canvas;
 }
 export async function downloadOffer(record:CloudRecord){
- const canvas=await renderOfferCanvas(record);
+ const canvas=record.data.type==='Offer Letter'?await renderOfferCanvas(record):await renderCompletionCanvas(record);
  const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Unable to render offer.')),'image/jpeg',0.95));
  const jpeg=new Uint8Array(await image.arrayBuffer()),enc=new TextEncoder(),parts:Uint8Array[]=[],offsets=[0];let length=0;
  const push=(v:string|Uint8Array)=>{const bytes=typeof v==='string'?enc.encode(v):v;parts.push(bytes);length+=bytes.length;};

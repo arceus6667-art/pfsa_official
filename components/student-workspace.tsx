@@ -299,12 +299,12 @@ export function StudentWorkspace() {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={6}
-            placeholder="Minimum 200 words: explain your method, observations, evidence handling and learning."
+            placeholder="Optional: explain your method, observations and learning."
           />
           <div className="submission-row">
-            <small>{wordCount}/200 words</small>
+            <small>{wordCount} words</small>
             <button
-              disabled={!application || !file || wordCount < 200}
+              disabled={!application || !file}
               onClick={submit}
             >
               Submit project

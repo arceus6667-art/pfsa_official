@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import {LogOut} from 'lucide-react';
+import {StudentMonthCalendar} from './student-month-calendar';
+import {CompletionCelebration} from './completion-celebration';
 import type { User } from "@supabase/supabase-js";
 import {
   cloud,
@@ -21,7 +23,7 @@ import {readAllRows} from "@/lib/admin-pagination";
 import {CertificationCards} from "./certification-cards";
 import {profileChanges} from "@/lib/profile-fields";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
-import {rememberProgramme,completePendingApplication,countWords} from "@/lib/application-flow";
+import {rememberProgramme,completePendingApplication} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
 import {staffLoginEmail} from '@/lib/staff-login';
 import {SupportPanel,useSupportConversations} from './support-conversations';
@@ -317,7 +319,7 @@ export function AcademyCloud({
     form.reset();
   };
   const renderFile = (record: CloudRecord) =>
-    record.data.type==='Offer Letter' && record.data.generated && !record.data.path ? <button onClick={()=>run(()=>downloadOffer(record),'Offer downloaded.')} disabled={busy}>Download offer letter</button> : record.data.url && !record.data.path ? (
+    record.kind==='document' && record.data.generated && !record.data.path ? <button onClick={()=>run(()=>downloadOffer(record),'Document downloaded.')} disabled={busy}>{record.data.type==='Offer Letter'?'Download offer letter':'Download document'}</button> : record.data.url && !record.data.path ? (
       <a href={String(record.data.url)} target="_blank" rel="noreferrer">
         Open guide PDF ↗
       </a>
@@ -633,6 +635,7 @@ export function AcademyCloud({
           </button>
         ))}
       </nav>
+      {!isAdmin&&<CompletionCelebration userId={user.id} programme={programme?.id} completed={completed} prepaid={own.some(r=>r.kind==='payment')} onCertification={()=>setTab('Certification')}/>}
       <div className="cloud-main">
         {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className={"cloud-order-status cloud-start-banner "+(tab!=="Today"?"cloud-mobile-start-hidden":"")}><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
@@ -939,8 +942,9 @@ export function AcademyCloud({
             </section>
           </>
         )}
+        {!isAdmin && tab === "Schedule" && <div className="student-mobile-schedule"><StudentMonthCalendar tasks={tasks} onTask={w=>{setDescriptionText("");setWeek(w);setTab("Tasks");}}/></div>}
         {!isAdmin && tab === "Schedule" && (
-          <section>
+          <section className="student-desktop-schedule">
             {!isAdmin&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-mobile-start-hidden"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
               <h2>Weekly Schedule</h2>
@@ -994,6 +998,7 @@ export function AcademyCloud({
                       <button
                         key={t.id}
                         onClick={() => {
+                          setDescriptionText("");
                           setWeek(Number(t.data.week));
                           setTab("Tasks");
                         }}
@@ -1007,15 +1012,14 @@ export function AcademyCloud({
           </section>
         )}
         {!isAdmin && tab === "Tasks" && (
-          <section>
-            <DomainGuides programme={programme?.id} />
-            <h2>Four-week internship roadmap</h2>
+          <section className="student-task-panel">
+            <h2 className="task-roadmap-heading">Four-week internship roadmap</h2>
             <div className="cloud-controls cloud-week-tabs">
               {[1, 2, 3, 4].map((w) => (
                 <button
                   className={w === week ? "active" : ""}
                   key={w}
-                  onClick={() => setWeek(w)}
+                  onClick={() => {setWeek(w);setDescriptionText("");}}
                 >
                   Week {w}
                 </button>
@@ -1050,14 +1054,13 @@ export function AcademyCloud({
                   </article>
                 ) : (
                   <form
+                    key={String(programme?.id)+'-'+week}
                     className="cloud-form"
                     onSubmit={(e) => {
                       e.preventDefault();
                       const form = e.currentTarget;
                       run(async () => {
                         const description = field(form, "description");
-                        if (countWords(description) < 200)
-                          throw new Error("Please enter at least 200 words.");
                         const file = new FormData(form).get("file") as File;
                         const path = await uploadFile(file, user.id);
                         await addRecord("submission", user.id, {
@@ -1081,21 +1084,22 @@ export function AcademyCloud({
                       />
                     </label>
                     <label>
-                      Project description (minimum 200 words)
-                      <textarea name="description" required rows={8} value={descriptionText} onChange={e=>setDescriptionText(e.target.value)} aria-describedby="description-count"/><small id="description-count" aria-live="polite">{countWords(descriptionText)} / 200 words minimum</small>
+                      Project description (optional)
+                      <textarea name="description" rows={4} value={descriptionText} onChange={e=>setDescriptionText(e.target.value)} placeholder="Add notes about your project work, if needed."/>
                     </label>
-                    <button disabled={busy||countWords(descriptionText)<200}>Submit project</button>
+                    <button disabled={busy}>Submit project</button>
                   </form>
                 )}
               </>
             ) : (
               <p>Your academy has not published a task for this week yet.</p>
             )}
+            <DomainGuides programme={programme?.id} compact />
           </section>
         )}
         {!isAdmin && tab === "Resources" && (
           <section>
-            <DomainGuides programme={programme?.id} />
+            <DomainGuides programme={programme?.id} compact />
             <h2>Domain resources</h2>
             {records
               .filter(
@@ -1103,7 +1107,7 @@ export function AcademyCloud({
                   r.kind === "resource" && r.data.programme === programme?.id,
               )
               .map((r) => (
-                <article className="cloud-row" key={r.id}>
+                <article className="cloud-row student-resource-row" key={r.id}>
                   <h3>{r.data.title}</h3>
                   {r.data.path ? (
                     renderFile(r)
