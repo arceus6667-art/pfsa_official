@@ -6,7 +6,7 @@ const start=await load('lib/start-choice.ts'),orders=await load('lib/document-or
 const now=Date.parse('2026-11-12T00:00:00Z');
 const choice={mode:'regular',start_at:'2026-11-17T00:00:00+05:30',legacy_access:false,payment_id:null};
 assert.equal(start.canSubmitWork(null,now),false);
-assert.equal(start.canSubmitWork(choice,now),false);
+assert.equal(start.canSubmitWork(choice,now,'A1/2026'),true);
 assert.equal(start.canSubmitWork(choice,Date.parse(choice.start_at)),true);
 assert.equal(start.canSubmitWork({...choice,mode:'early'},now),false);
 assert.equal(start.canSubmitWork({...choice,mode:'early',payment_id:'pending-payment'},now),true);

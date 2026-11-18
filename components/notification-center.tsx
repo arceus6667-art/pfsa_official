@@ -6,7 +6,7 @@ import {programmes} from '@/lib/pfsa-data';
 import {readAllRows} from '@/lib/admin-pagination';
 import './notification-center.css';
 
-export type Notification={id:string;category:string;title:string;body:string;audience:string;target_programme:string|null;target_batch:string|null;target_user:string|null;published:boolean;created_at:string};
+export type Notification={id:string;category:string;title:string;body:string;audience:string;target_programme:string|null;target_batch:string|null;target_user:string|null;published:boolean;system_key?:string|null;created_at:string};
 type Receipt={notification_id:string;read_at:string|null;dismissed_at:string|null};
 export function useNotifications(userId:string|undefined,isAdmin:boolean){
  const [items,setItems]=useState<Notification[]>([]),[receipts,setReceipts]=useState<Receipt[]>([]),[error,setError]=useState('');
@@ -36,7 +36,7 @@ export function useNotifications(userId:string|undefined,isAdmin:boolean){
  return {items,receipts,error,refresh,act,markAll};
 }
 type State=ReturnType<typeof useNotifications>;
-export function NotificationBell({state,onTasks}:{state:State;onTasks:()=>void}){
+export function NotificationBell({state,onTasks,onEarlyBird}:{state:State;onTasks:()=>void;onEarlyBird?:()=>void}){
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const host=useRef<HTMLDivElement>(null),button=useRef<HTMLButtonElement>(null);
  const unread=state.items.filter(n=>!state.receipts.some(r=>r.notification_id===n.id&&r.read_at));
@@ -50,7 +50,7 @@ export function NotificationBell({state,onTasks}:{state:State;onTasks:()=>void})
    <div className="pfsa-notification-tools"><button disabled={busy||!unread.length} onClick={()=>void perform(state.markAll)}><CheckCheck size={15}/> Mark all as read</button><button onClick={()=>void state.refresh()}>Refresh</button></div>
    {(error||state.error)&&<p role="alert">{error||state.error}</p>}
    {!state.items.length&&!state.error&&<p className="pfsa-notification-empty">You're all caught up. Academy announcements will appear here.</p>}
-   <div className="pfsa-notification-list">{state.items.map(n=>{const fresh=unread.some(item=>item.id===n.id);return <article key={n.id} className={fresh?'is-unread':''}><small>{fresh?'NEW · ':''}{new Date(n.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</small><h3>{n.title}</h3><p>{n.body}</p><div className="pfsa-notification-tools">{fresh&&<button disabled={busy} onClick={()=>void perform(()=>state.act(n.id))}>Mark as read</button>}{n.category==='programme_start'&&<button disabled={busy} onClick={()=>{onTasks();setOpen(false);void perform(()=>state.act(n.id,true));}}>Open tasks →</button>}</div></article>;})}</div>
+   <div className="pfsa-notification-list">{state.items.map(n=>{const fresh=unread.some(item=>item.id===n.id);return <article key={n.id} className={fresh?'is-unread':''}><small>{fresh?'NEW · ':''}{new Date(n.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</small><h3>{n.title}</h3><p>{n.body}</p><div className="pfsa-notification-tools">{fresh&&<button disabled={busy} onClick={()=>void perform(()=>state.act(n.id))}>Mark as read</button>}{n.system_key==='pfsa-a2-submission-window-v1'&&onEarlyBird&&<button onClick={()=>{onEarlyBird();setOpen(false);void perform(()=>state.act(n.id,true));}}>View Early Bird →</button>}{n.category==='programme_start'&&<button disabled={busy} onClick={()=>{onTasks();setOpen(false);void perform(()=>state.act(n.id,true));}}>Open tasks →</button>}</div></article>;})}</div>
   </div>}
   {!open&&floating&&<aside className="pfsa-notification-toast" role="status"><div className="pfsa-notification-title"><span className="pfsa-notification-eyebrow"><Bell size={16}/> ACADEMY UPDATE</span><button aria-label="Dismiss notification" disabled={busy} onClick={()=>void perform(()=>state.act(floating.id,true))}><X size={18}/></button></div><h3>{floating.title}</h3><p>{floating.body}</p>{error&&<p role="alert">{error}</p>}<button onClick={()=>setOpen(true)}>View notifications →</button></aside>}
  </div>;

@@ -30,7 +30,8 @@ import {SupportPanel,useSupportConversations} from './support-conversations';
 import {AdminDomainAssignment} from './admin-domain-assignment';
 import {NotificationBell,AdminNotifications,useNotifications} from './notification-center';
 import {StartChoiceScreen} from './start-choice';
-import {canSubmitWork,type StartChoice,type StartOptions} from '@/lib/start-choice';
+import {canSubmitWork,A2_SUBMISSIONS_TIME,type StartChoice,type StartOptions} from '@/lib/start-choice';
+import {A2SubmissionStatus,A2EarlyBirdCard} from './a2-submission-window';
 import {verifiedWorkspaceUser,createWorkspaceRefreshGate} from '@/lib/workspace-session';
 
 const studentTabs = [
@@ -99,11 +100,13 @@ export function AcademyCloud({
   const candidatePages=Math.max(1,Math.ceil(matchingCandidates.length/10)),visibleCandidatePage=Math.min(candidatePage,candidatePages);
   const visibleCandidates=matchingCandidates.slice((visibleCandidatePage-1)*10,visibleCandidatePage*10);
   useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(timer);},[]);
-  const learningOpen=canSubmitWork(startChoice,clock);
   const isAdmin = user?.app_metadata?.pfsa_role === "admin";
   const supportState=useSupportConversations(user?.id,isAdmin);
   const notificationState=useNotifications(page==="student"||page==="admin"?user?.id:undefined,isAdmin);
   const me = profiles.find((p) => p.id === user?.id);
+  const isA2 = me?.cohort === 'A2/2026';
+  const learningOpen=canSubmitWork(startChoice,clock,me?.cohort);
+  useEffect(()=>{if(!isA2)return;const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[isA2]);
   const application = records.find(
     (r) => r.kind === "application" && r.user_id === user?.id,
   );
@@ -608,7 +611,7 @@ export function AcademyCloud({
           <b>{isAdmin ? "Academy administration" : "Student Workspace"}</b>
         </a>
         <div className={!isAdmin?'student-workspace-actions':undefined}>
-          {!isAdmin&&<NotificationBell state={notificationState} onTasks={()=>setTab("Tasks")}/>}
+          {!isAdmin&&<NotificationBell state={notificationState} onEarlyBird={()=>setTab('Certification')} onTasks={()=>setTab("Tasks")}/>}
           <button
             aria-label="Change colour theme"
             onClick={() => {
@@ -654,7 +657,8 @@ export function AcademyCloud({
       {!isAdmin&&<CompletionCelebration userId={user.id} programme={programme?.id} completed={completed} prepaid={own.some(r=>r.kind==='payment')} onCertification={()=>setTab('Certification')}/>}
       <div className="cloud-main">
         {!isAdmin&&tab==="Today"&&!application&&<aside className="student-program-prompt" aria-labelledby="student-program-prompt-title"><div><small>YOUR NEXT STEP</small><h2 id="student-program-prompt-title">Kindly select your Program</h2><p>Choose your internship domain to receive your offer letter and access your weekly tasks, schedule and learning resources.</p></div><a href="/internships">Select your Program →</a></aside>}
-        {!isAdmin&&tab==="Today"&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-start-banner"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
+        {!isAdmin&&isA2&&tab==='Today'&&<A2SubmissionStatus choice={startChoice} now={clock} onEarlyBird={()=>setTab('Certification')}/>}
+        {!isAdmin&&!isA2&&tab==="Today"&&startChoice&&!startChoice.legacy_access&&<div className="cloud-order-status cloud-start-banner"><strong>{startChoice.mode==='early'?'Early Start · learning access open':'Regular Start · learning access open'}</strong><p>{startChoice.mode==='early'?'Your ₹400 document bundle payment is recorded for manual review. Complete the four weekly tasks before document issuance.':'Your workspace and offer letter are available. You can submit all four weekly tasks now. Your assigned batch dates remain unchanged.'}</p></div>}
         <div className="cloud-heading">
           <div>
             <small>
@@ -1041,7 +1045,7 @@ export function AcademyCloud({
                 </button>
               ))}
             </div>
-            {!learningOpen ? <p role="status">{startChoice?'Complete your Early Start payment submission or contact Support to open learning access.':'Choose your start option first.'}</p> : activeTask ? (
+            {!learningOpen ? isA2&&clock<A2_SUBMISSIONS_TIME?<div className="a2-task-locked" role="status"><strong>★ Want to submit early?</strong><p>A2/2026 regular submissions open on <b>5 December 2026, 12:00 AM IST</b>. Choose the ₹400 Early Bird bundle in Certification to submit before this date. Your offer letter and learning resources remain available.</p><button onClick={()=>setTab('Certification')}>★ View Early Bird in Certification →</button></div>:<p role="status">{startChoice?'Complete your Early Start payment submission or contact Support to open learning access.':'Choose your start option first.'}</p> : activeTask ? (
               <>
                 <h3>{activeTask.data.title}</h3>
                 <p>{activeTask.data.description}</p>
@@ -1144,7 +1148,7 @@ export function AcademyCloud({
             ) && <p>No resources have been published for your domain.</p>}
           </section>
         )}
-        {!isAdmin && tab === "Certification" && <CertificationCards records={own} userId={user.id} email={me?.email || user.email} programme={programme?.id} completed={completed} busy={busy} run={run}/>}
+        {!isAdmin && tab === "Certification" && <>{isA2&&<A2EarlyBirdCard userId={user.id} records={own} choice={startChoice} now={clock} onDone={()=>refresh(true)}/>}<CertificationCards records={own} userId={user.id} email={me?.email || user.email} programme={programme?.id} completed={completed} busy={busy} run={run}/></>}
 
       </div>
     </main>
