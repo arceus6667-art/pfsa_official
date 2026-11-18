@@ -31,6 +31,7 @@ import {AdminDomainAssignment} from './admin-domain-assignment';
 import {NotificationBell,AdminNotifications,useNotifications} from './notification-center';
 import {StartChoiceScreen} from './start-choice';
 import {canSubmitWork,type StartChoice,type StartOptions} from '@/lib/start-choice';
+import {verifiedWorkspaceUser,createWorkspaceRefreshGate} from '@/lib/workspace-session';
 
 const studentTabs = [
   "Today",
@@ -89,6 +90,7 @@ export function AcademyCloud({
     [search, setSearch] = useState(""), [descriptionText,setDescriptionText]=useState("");
   const [startChoice,setStartChoice]=useState<StartChoice|null>(null),[startOptions,setStartOptions]=useState<StartOptions|null>(null),[clock,setClock]=useState(Date.now());
   const [candidatePage,setCandidatePage]=useState(1);
+  const [refreshGate] = useState(createWorkspaceRefreshGate);
   const [assessmentTab,setAssessmentTab]=useState<'pending'|'completed'>('pending');
   const allSubmissions=records.filter(r=>r.kind==='submission');
   const reviewedSubmissions=allSubmissions.filter(r=>r.data.status==='reviewed');
@@ -124,12 +126,9 @@ export function AcademyCloud({
   tasks.sort((a,b)=>Number(a.data.week)-Number(b.data.week));
   const activeTask = tasks.find((r) => Number(r.data.week) === week);
   useEffect(()=>{setDescriptionText('');},[week]);
-  const refresh = async () => {
-    const {
-      data: { user: current },
-      error,
-    } = await cloud.auth.getUser();
-    if (error && current) throw error;
+  const refresh = (fresh = false) => refreshGate.run(async isCurrent => {
+    const current = await verifiedWorkspaceUser(cloud.auth);
+    if (!isCurrent()) return;
     setUser(current);
     if (!current) {
       setLoading(false);
@@ -141,19 +140,22 @@ export function AcademyCloud({
         readAllRows<Profile>((from,to)=>cloud.rpc('pfsa_admin_students').range(from,to)),
         readAllRows<CloudRecord>((from,to)=>cloud.from('pfsa_records').select('*').order('created_at',{ascending:false}).order('id').range(from,to))
       ]);
+      if (!isCurrent()) return;
       setProfiles(p);setRecords(r);
     } else {
       const [p,r]=await Promise.all([cloud.from('pfsa_profiles').select('*').order('name'),cloud.from('pfsa_records').select('*').order('created_at',{ascending:false})]);
       if(p.error||r.error)throw p.error||r.error;
+      if (!isCurrent()) return;
       setProfiles(p.data||[]);setRecords(r.data||[]);
       if(page==='student'){
        const [selection,options]=await Promise.all([cloud.from('pfsa_start_selections').select('*').eq('user_id',current.id).maybeSingle(),cloud.rpc('pfsa_start_options')]);
        if(selection.error||options.error)throw selection.error||options.error;
+       if (!isCurrent()) return;
        setStartChoice(selection.data);setStartOptions(options.data);
       }
     }
     setLoading(false);
-  };
+  }, fresh);
   useEffect(() => {
     const selected=new URLSearchParams(window.location.search).get("programme");
     if(selected) rememberProgramme(selected);
@@ -166,7 +168,13 @@ export function AcademyCloud({
     sync();
     const {
       data: { subscription },
-    } = cloud.auth.onAuthStateChange(() => {
+    } = cloud.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        refreshGate.invalidate();
+        setUser(null); setProfiles([]); setRecords([]); setStartChoice(null); setLoading(false);
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') refreshGate.invalidate();
       setTimeout(sync, 0);
     });
     const channel = cloud
@@ -183,10 +191,13 @@ export function AcademyCloud({
       )
       .subscribe();
     window.addEventListener("focus", sync);
+    window.addEventListener("online", sync);
     return () => {
       subscription.unsubscribe();
       cloud.removeChannel(channel);
       window.removeEventListener("focus", sync);
+      window.removeEventListener("online", sync);
+      refreshGate.invalidate();
     };
   }, []);
   const run = async (
@@ -197,8 +208,12 @@ export function AcademyCloud({
     setNotice("");
     try {
       await action();
-      await refresh();
-      setNotice(success);
+      try {
+        await refresh(true);
+        setNotice(success);
+      } catch {
+        setNotice(success + ' Your change is saved, but the workspace could not refresh. Use Refresh when your connection returns.');
+      }
     } catch (e) {
       setNotice(
         e && typeof e==='object' && 'message' in e ? String(e.message) : "Unable to save. Please try again.",
@@ -560,7 +575,8 @@ export function AcademyCloud({
   if (!user)
     return (
       <main className="cloud-auth">
-        <h1>Sign in to your academy account</h1>
+        <h1>{notice ? 'Unable to load your workspace' : 'Sign in to your academy account'}</h1>
+        {notice && <><p role="status">{notice}</p><button onClick={() => void refresh().then(()=>setNotice('')).catch(e=>setNotice(e.message))}>Retry loading workspace</button></>}
         <a href={page === "admin" ? "/admin/login" : "/login"}>
           Continue to sign in →
         </a>

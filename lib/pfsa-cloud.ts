@@ -10,7 +10,7 @@ export const googleSignInConfigured =
   configuredUrl === "https://rxiqubmkzqvspnzdasiz.supabase.co" &&
   !!configuredKey;
 export const cloud = createClient(configuredUrl, configuredKey, {
-  auth: { flowType: "pkce" },
+  auth: { flowType: "pkce", persistSession: true, autoRefreshToken: true },
 });
 export type RecordKind =
   | "application"

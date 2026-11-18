@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+import ts from 'typescript';
+import assert from 'node:assert/strict';
+import {renderToStaticMarkup} from 'react-dom/server';
+import React from 'react';
+const require=createRequire(import.meta.url),scope={exports:{},require,Date:class extends Date{constructor(...args){super(...(args.length?args:['2026-11-18T12:00:00+05:30']));}}};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('components/student-month-calendar.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText,scope);
+const html=renderToStaticMarkup(React.createElement(scope.exports.StudentMonthCalendar,{tasks:[{id:'week-1',data:{week:1,due:'2026-11-23',title:'Week 1'}}],onTask:()=>{}}));
+assert.match(html,/<button[^>]*aria-label="[^"]*23 November 2026, task deadline"[^>]*class="deadline [^"]*"[^>]*>23<\/button>/);
+assert.doesNotMatch(html,/<i /);assert.match(html,/Highlighted dates are submission deadlines/);
+console.log('PASS: November 23 deadline uses a full-date highlight and accessible deadline label; no dot-only marker.');
