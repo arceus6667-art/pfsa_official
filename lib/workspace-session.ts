@@ -1,8 +1,9 @@
-import type {SupabaseClient} from '@supabase/supabase-js';
+import {isAuthSessionMissingError,type SupabaseClient} from '@supabase/supabase-js';
 
 // A failed network/auth request is not a successful "no user" response.
 export async function verifiedWorkspaceUser(auth: SupabaseClient['auth']) {
  const {data, error} = await auth.getUser();
+ if (isAuthSessionMissingError(error)) return null;
  if (error) throw error;
  return data.user;
 }

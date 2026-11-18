@@ -2,9 +2,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {AuthSessionMissingError} from '@supabase/supabase-js';
 
 const compile = code => ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-const scope={exports:{}};
+const scope={exports:{},require:createRequire(import.meta.url)};
 vm.runInNewContext(compile(fs.readFileSync('lib/workspace-session.ts','utf8')),scope);
 const {createWorkspaceRefreshGate,verifiedWorkspaceUser}=scope.exports;
 const user={id:'qa-student'};
@@ -12,6 +14,7 @@ const networkError=Object.assign(new Error('Temporary auth connection failure'),
 await assert.rejects(()=>verifiedWorkspaceUser({getUser:async()=>({data:{user:null},error:networkError})}),e=>e===networkError);
 assert.equal(await verifiedWorkspaceUser({getUser:async()=>({data:{user},error:null})}),user);
 assert.equal(await verifiedWorkspaceUser({getUser:async()=>({data:{user:null},error:null})}),null);
+assert.equal(await verifiedWorkspaceUser({getUser:async()=>({data:{user:null},error:new AuthSessionMissingError()})}),null,'A genuinely signed-out visitor is not a network failure');
 
 // Exercise the production refresh and action runners, not copies of their logic.
 const source=fs.readFileSync('components/academy-cloud.tsx','utf8');
