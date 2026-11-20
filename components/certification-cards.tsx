@@ -7,6 +7,7 @@ import { downloadOffer } from '@/lib/offer-download';
 import { orderName, firstOrder, orderReady, reviewDue } from '@/lib/document-order';
 import { documentPrice, PRICING_VERSION, type DocumentPackage } from '@/lib/document-pricing';
 import { paymentAmount } from '@/lib/admin-report';
+import {isExperienceCertificate} from '@/lib/experience-certificate';
 type Pack = DocumentPackage;
 export function CertificationCards({ records, userId, email, programme, completed, busy, run }: {
  records: CloudRecord[]; userId: string; email?: string; programme?: string; completed: boolean; busy: boolean;
@@ -23,7 +24,7 @@ export function CertificationCards({ records, userId, email, programme, complete
  const offer = docs.find(r => r.data.type === 'Offer Letter');
  const experience = docs.find(r => ['Letter of Experience','Certificate of Experience','Letter of Completion'].includes(String(r.data.type)));
  const recommendation = docs.find(r => r.data.type === 'Letter of Recommendation');
- const download = (doc: CloudRecord) => run(() => doc.data.path ? openFile(String(doc.data.path)) : downloadOffer(doc), 'Download ready.');
+ const download = (doc: CloudRecord) => run(() => isExperienceCertificate(doc) ? downloadOffer(doc) : doc.data.path ? openFile(String(doc.data.path)) : downloadOffer(doc), 'Download ready.');
  const choose = (value: Pack) => { if (!order && !busy) { setAccepted(false); setPack(value); } };
  const canBuy = completed && !busy && !order && policyReady;
  const due = order ? reviewDue(order,records) : null;

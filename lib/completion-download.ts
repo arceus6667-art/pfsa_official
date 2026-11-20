@@ -1,8 +1,10 @@
 import type {CloudRecord} from './pfsa-cloud';
 import {academy} from './academy-config';
 import {programmes} from './pfsa-data';
+import {isExperienceCertificate,renderExperienceCanvas} from './experience-certificate';
 async function image(src:string){const img=new Image();img.src=src;await img.decode();return img;}
 export async function renderCompletionCanvas(record:CloudRecord){
+ if(isExperienceCertificate(record))return renderExperienceCanvas(record);
  if(record.kind!=='document'||record.data.status!=='published'||!['Certificate of Experience','Letter of Recommendation','Letter of Experience','Letter of Completion'].includes(String(record.data.type)))throw Error('This document is not available for download.');
  const canvas=document.createElement('canvas');canvas.width=1240;canvas.height=1754;const context=canvas.getContext('2d');if(!context)throw Error('Unable to render document.');const ctx:CanvasRenderingContext2D=context;
  const [header,stamp,founder,coordinator]=await Promise.all([image('/assets/documents/offer-template-preview.png'),image(academy.stamp),image(academy.founderSignature),image(academy.coordinatorSignature)]);

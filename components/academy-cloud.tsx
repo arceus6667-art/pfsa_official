@@ -25,6 +25,7 @@ import {profileChanges} from "@/lib/profile-fields";
 import { orderName, orderReady, reviewDue } from "@/lib/document-order";
 import {rememberProgramme,completePendingApplication} from "@/lib/application-flow";
 import {downloadOffer} from '@/lib/offer-download';
+import {isExperienceCertificate} from '@/lib/experience-certificate';
 import {staffLoginEmail} from '@/lib/staff-login';
 import {SupportPanel,useSupportConversations} from './support-conversations';
 import {AdminDomainAssignment} from './admin-domain-assignment';
@@ -337,7 +338,7 @@ export function AcademyCloud({
     form.reset();
   };
   const renderFile = (record: CloudRecord) =>
-    record.kind==='document' && record.data.generated && !record.data.path ? <button onClick={()=>run(()=>downloadOffer(record),'Document downloaded.')} disabled={busy}>{record.data.type==='Offer Letter'?'Download offer letter':'Download document'}</button> : record.data.url && !record.data.path ? (
+    record.kind==='document' && record.data.status==='published' && (isExperienceCertificate(record)||(record.data.generated && !record.data.path)) ? <button onClick={()=>run(()=>downloadOffer(record),'Document downloaded.')} disabled={busy}>{record.data.type==='Offer Letter'?'Download offer letter':'Download document'}</button> : record.data.url && !record.data.path ? (
       <a href={String(record.data.url)} target="_blank" rel="noreferrer">
         Open guide PDF ↗
       </a>

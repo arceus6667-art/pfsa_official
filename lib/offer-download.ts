@@ -49,11 +49,12 @@ export async function downloadOffer(record:CloudRecord){
  const canvas=record.data.type==='Offer Letter'?await renderOfferCanvas(record):await renderCompletionCanvas(record);
  const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Unable to render offer.')),'image/jpeg',0.95));
  const jpeg=new Uint8Array(await image.arrayBuffer()),enc=new TextEncoder(),parts:Uint8Array[]=[],offsets=[0];let length=0;
+ const landscape=canvas.width>canvas.height,pageWidth=landscape?841.89:595.28,pageHeight=landscape?595.28:841.89;
  const push=(v:string|Uint8Array)=>{const bytes=typeof v==='string'?enc.encode(v):v;parts.push(bytes);length+=bytes.length;};
  const obj=(id:number,body:string)=>{offsets[id]=length;push(`${id} 0 obj\n${body}\nendobj\n`);};
- push('%PDF-1.4\n');obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im 4 0 R >> >> /Contents 5 0 R >>');
- offsets[4]=length;push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width 1240 /Height 1754 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);push(jpeg);push('\nendstream\nendobj\n');
- const draw='q 595.28 0 0 841.89 0 0 cm /Im Do Q';obj(5,`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`);
+ push('%PDF-1.4\n');obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im 4 0 R >> >> /Contents 5 0 R >>`);
+ offsets[4]=length;push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);push(jpeg);push('\nendstream\nendobj\n');
+ const draw=`q ${pageWidth} 0 0 ${pageHeight} 0 0 cm /Im Do Q`;obj(5,`<< /Length ${draw.length} >>\nstream\n${draw}\nendstream`);
  const xref=length;push('xref\n0 6\n0000000000 65535 f \n');for(let i=1;i<=5;i++)push(String(offsets[i]).padStart(10,'0')+' 00000 n \n');push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
  const url=URL.createObjectURL(new Blob(parts as BlobPart[],{type:'application/pdf'}));const link=document.createElement('a');link.href=url;link.download=String(record.data.number)+'.pdf';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
